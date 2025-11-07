@@ -1,15 +1,163 @@
-import { User } from "lucide-react";
+'use client';
+
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import placeholderData from '@/lib/placeholder-images.json';
+import { User, Mail, Calendar, BarChart, FileText } from 'lucide-react';
+import { collection } from 'firebase/firestore';
+import { Progress } from '@/components/ui/progress';
 
 export default function ProfilePage() {
-  return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col items-center justify-center rounded-lg border-2 border-dashed border-border">
-      <div className="flex flex-col items-center text-center">
-        <div className="mb-4 rounded-full border border-primary/20 bg-primary/10 p-3">
-            <User className="h-8 w-8 text-primary" />
-        </div>
-        <h2 className="text-2xl font-bold">User Profile</h2>
-        <p className="text-muted-foreground">This feature is under construction.</p>
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const avatar = placeholderData.placeholderImages.find(p => p.id === 'user-avatar');
+
+  const resumeAnalysisQuery = useMemoFirebase(() => 
+    user ? collection(firestore, 'users', user.uid, 'resumeAnalysis') : null,
+    [firestore, user]
+  );
+  const testResultsQuery = useMemoFirebase(() => 
+    user ? collection(firestore, 'users', user.uid, 'testResults') : null,
+    [firestore, user]
+  );
+
+  const { data: resumeAnalyses, isLoading: isResumeLoading } = useCollection(resumeAnalysisQuery);
+  const { data: testResults, isLoading: isTestLoading } = useCollection(testResultsQuery);
+
+  if (isUserLoading || isResumeLoading || isTestLoading) {
+    return <ProfileSkeleton />;
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] flex-col items-center justify-center">
+        <p>Please log in to view your profile.</p>
       </div>
+    );
+  }
+
+  const profileStrength = (!!resumeAnalyses?.length ? 50 : 0) + (!!testResults?.length ? 25 : 0);
+  const creationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A';
+
+  return (
+    <div className="container mx-auto max-w-4xl py-8">
+      <Card className="glass-effect overflow-hidden">
+        <div className="h-32 bg-gradient-to-r from-primary to-secondary" />
+        <CardHeader className="flex flex-col items-center text-center -mt-16">
+          <Avatar className="h-24 w-24 border-4 border-background">
+            {user.photoURL ? (
+              <AvatarImage src={user.photoURL} alt="User Avatar" />
+            ) : (
+              avatar && <AvatarImage src={avatar.imageUrl} alt="User Avatar" data-ai-hint={avatar.imageHint} />
+            )}
+            <AvatarFallback className="text-3xl">
+              {user.displayName?.charAt(0) || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <CardTitle className="mt-4 text-3xl">{user.displayName || 'Anonymous User'}</CardTitle>
+          <CardDescription>{user.email}</CardDescription>
+        </CardHeader>
+        <CardContent className="mt-6 space-y-8">
+            <Card className="glass-effect">
+                <CardHeader>
+                    <CardTitle>Profile Details</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-3">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <span>{user.displayName || 'Not set'}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                        <span>{user.email || 'Not set'}</span>
+                    </div>
+                     <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <span>Member since {creationDate}</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="glass-effect">
+                <CardHeader>
+                    <CardTitle>Activity Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <span>Resumes Analyzed</span>
+                        </div>
+                        <span className="font-bold">{resumeAnalyses?.length || 0}</span>
+                    </div>
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <BarChart className="h-5 w-5 text-muted-foreground" />
+                            <span>Tests Completed</span>
+                        </div>
+                        <span className="font-bold">{testResults?.length || 0}</span>
+                    </div>
+                </CardContent>
+            </Card>
+
+             <Card className="glass-effect">
+                <CardHeader>
+                    <CardTitle>Profile Strength</CardTitle>
+                     <CardDescription>Complete more activities to strengthen your profile.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Progress value={profileStrength} className="h-3" />
+                    <p className="text-right text-sm mt-2 text-muted-foreground">{profileStrength}% Complete</p>
+                </CardContent>
+            </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+
+function ProfileSkeleton() {
+    return (
+      <div className="container mx-auto max-w-4xl py-8">
+        <Card className="overflow-hidden">
+          <Skeleton className="h-32 w-full" />
+          <div className="flex flex-col items-center -mt-16">
+            <Skeleton className="h-24 w-24 rounded-full border-4 border-background" />
+            <Skeleton className="h-8 w-48 mt-4" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <CardContent className="mt-12 space-y-8">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-36" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-3 w-full" />
+                </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }

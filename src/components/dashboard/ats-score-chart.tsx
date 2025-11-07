@@ -1,15 +1,14 @@
 "use client"
 
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip } from "recharts"
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-import { type ChartConfig } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 
 interface AtsScoreChartProps {
     score: number;
 }
 
 export function AtsScoreChart({ score }: AtsScoreChartProps) {
-    const data = [
+    const chartData = [
         { name: 'Score', value: score, fill: 'hsl(var(--primary))' },
         { name: 'Remaining', value: 100 - score, fill: 'hsl(var(--muted))' },
     ];
@@ -33,7 +32,7 @@ export function AtsScoreChart({ score }: AtsScoreChartProps) {
                             content={<ChartTooltipContent hideLabel hideIndicator />}
                         />
                         <Pie
-                            data={data}
+                            data={chartData}
                             dataKey="value"
                             nameKey="name"
                             cx="50%"
@@ -44,7 +43,7 @@ export function AtsScoreChart({ score }: AtsScoreChartProps) {
                             endAngle={450}
                             strokeWidth={0}
                         >
-                          {data.map((entry, index) => (
+                          {chartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
