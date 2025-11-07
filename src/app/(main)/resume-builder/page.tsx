@@ -145,7 +145,6 @@ export default function ResumeBuilderPage() {
     URL.revokeObjectURL(url);
   };
 
-
   return (
     <div className="container mx-auto max-w-6xl py-8">
       <Card className="glass-effect">
