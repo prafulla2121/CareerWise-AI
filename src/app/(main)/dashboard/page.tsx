@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PersonalityChart } from "@/components/dashboard/personality-chart";
+import { SkillsChart } from "@/components/dashboard/skills-chart";
 
 export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
@@ -41,8 +43,10 @@ export default function DashboardPage() {
     const profileStrength = (!!latestResumeAnalysis ? 50 : 0) + (testsCompletedCount > 0 ? 25 : 0) + (user?.displayName ? 25 : 0);
 
     const testScores = latestTestResult?.scores || { aptitude: 0, personality: 0, interests: 0 };
+    const personalityScores = latestTestResult?.scores || { openness: 75, conscientiousness: 60, extraversion: 85, agreeableness: 90, neuroticism: 30 };
     
     const recommendedCareers = latestTestResult?.recommendedCareers || [];
+    const skills = latestResumeAnalysis?.skills || [];
 
     return (
         <div className="flex-1 space-y-4">
@@ -116,6 +120,26 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="pl-2">
                             <Overview scores={testScores} />
+                        </CardContent>
+                    </Card>
+                     <Card className="col-span-3 glass-effect">
+                        <CardHeader>
+                            <CardTitle>Personality Insights</CardTitle>
+                             <CardDescription>Your personality trait scores based on the assessment.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pl-2">
+                            <PersonalityChart scores={personalityScores} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                    <Card className="col-span-4 glass-effect">
+                        <CardHeader>
+                            <CardTitle>Skills Distribution</CardTitle>
+                            <CardDescription>A breakdown of your skills from your resume.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <SkillsChart skills={skills} />
                         </CardContent>
                     </Card>
                     <Card className="col-span-3 glass-effect">
