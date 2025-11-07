@@ -30,6 +30,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  devIndicators: {
+    buildActivity: false,
+  },
+  experimental: {
+    // This is required to allow the dev server to be accessed from outside the container
+    allowedDevOrigins: ["*.cloudworkstations.dev"],
+  },
 };
 
 export default nextConfig;
