@@ -9,7 +9,7 @@
  * Data Structure:
  * - /users/{userId}: Stores user profile data, accessible only to the user themselves.
  * - /users/{userId}/testResults/{testResultId}: Stores test results, accessible only to the user.
- * - /users/{userId}/chatMessages/{chatSessionId}/messages/{chatMessageId}: Stores chat messages, accessible only to the user.
+ * - /users/{userId}/chatMessages/{chatMessageId}: Stores chat messages, accessible only to the user.
  * - /users/{userId}/resumeAnalysis/{resumeAnalysisId}: Stores resume analysis results, accessible only to the user.
  * - /adminSettings/{settingsId}: Stores global admin settings, accessible only to admins. The `settingsId` must be `system`.
  * - /roles_admin/{userId}: Indicates admin status.  The presence of a document grants admin rights.
@@ -98,19 +98,15 @@ service cloud.firestore {
 
     /**
      * @description Rules for chat messages within a user's chat session.
-     * @path /users/{userId}/chatMessages/{chatSessionId}/messages/{chatMessageId}
+     * @path /users/{userId}/chatMessages/{chatMessageId}
      * @allow (create) Signed-in user creates a chat message in their own session.
-     * @allow (get, update, delete) Signed-in user accesses their own chat messages.
+     * @allow (get, list, update, delete) Signed-in user accesses their own chat messages.
      * @deny (create) Non-signed-in user or another user attempts to create a chat message.
-     * @deny (get, update, delete) Signed-in user attempts to access another user's chat messages.
+     * @deny (get, list, update, delete) Signed-in user attempts to access another user's chat messages.
      * @principle Enforces hierarchical ownership for chat messages.
      */
-    match /users/{userId}/chatMessages/{chatSessionId}/messages/{chatMessageId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+    match /users/{userId}/chatMessages/{chatMessageId} {
+      allow read, write: if isOwner(userId);
     }
 
     /**

@@ -254,21 +254,17 @@
         }
       },
       {
-        "path": "/users/{userId}/chatMessages/{chatSessionId}/messages/{chatMessageId}",
+        "path": "/users/{userId}/chatMessages/{chatMessageId}",
         "definition": {
           "entityName": "ChatMessage",
           "schema": {
             "$ref": "#/backend/entities/ChatMessage"
           },
-          "description": "Stores chat messages for each user within a chat session. Uses hierarchical paths to ensure only the user can access their chat history.",
+          "description": "Stores chat messages for each user. Uses hierarchical paths to ensure only the user can access their chat history.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier of the user."
-            },
-            {
-              "name": "chatSessionId",
-              "description": "The unique identifier for the chat session."
             },
             {
               "name": "chatMessageId",
