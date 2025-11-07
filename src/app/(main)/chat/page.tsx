@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser } from '@/firebase';
-import { Bot, Send, User as UserIcon, Loader2 } from 'lucide-reac';
+import { Bot, Send, User as UserIcon, Loader2 } from 'lucide-react';
 import { careerChat, CareerChatInput, CareerChatOutput } from '@/ai/ai-career-chat';
 import { cn } from '@/lib/utils';
 import placeholderData from '@/lib/placeholder-images.json';
