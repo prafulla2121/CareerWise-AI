@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Overview } from "@/components/dashboard/overview";
 import { AtsScoreChart } from "@/components/dashboard/ats-score-chart";
 import { FileText, BarChart, Bot } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 
 export default function DashboardPage() {
