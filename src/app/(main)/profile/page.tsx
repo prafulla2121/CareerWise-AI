@@ -4,15 +4,23 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import placeholderData from '@/lib/placeholder-images.json';
-import { User, Mail, Calendar, BarChart, FileText } from 'lucide-react';
+import { User as UserIcon, Mail, Calendar, BarChart, FileText } from 'lucide-react';
 import { collection } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
+
+const generateColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = hash % 360;
+  return `hsl(${h}, 70%, 50%)`;
+};
+
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const avatar = placeholderData.placeholderImages.find(p => p.id === 'user-avatar');
 
   const resumeAnalysisQuery = useMemoFirebase(() => 
     user ? collection(firestore, 'users', user.uid, 'resumeAnalysis') : null,
@@ -37,6 +45,9 @@ export default function ProfilePage() {
       </div>
     );
   }
+  
+  const userName = user.displayName || 'Anonymous User';
+  const avatarColor = generateColor(userName);
 
   const profileStrength = (!!resumeAnalyses?.length ? 50 : 0) + (!!testResults?.length ? 25 : 0);
   const creationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A';
@@ -47,16 +58,12 @@ export default function ProfilePage() {
         <div className="h-32 bg-gradient-to-r from-primary to-secondary" />
         <CardHeader className="flex flex-col items-center text-center -mt-16">
           <Avatar className="h-24 w-24 border-4 border-background">
-            {user.photoURL ? (
-              <AvatarImage src={user.photoURL} alt="User Avatar" />
-            ) : (
-              avatar && <AvatarImage src={avatar.imageUrl} alt="User Avatar" data-ai-hint={avatar.imageHint} />
-            )}
-            <AvatarFallback className="text-3xl">
-              {user.displayName?.charAt(0) || 'U'}
+            {user.photoURL && <AvatarImage src={user.photoURL} alt="User Avatar" />}
+            <AvatarFallback className="text-3xl" style={{ backgroundColor: avatarColor, color: 'white' }}>
+              {userName.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <CardTitle className="mt-4 text-3xl">{user.displayName || 'Anonymous User'}</CardTitle>
+          <CardTitle className="mt-4 text-3xl">{userName}</CardTitle>
           <CardDescription>{user.email}</CardDescription>
         </CardHeader>
         <CardContent className="mt-6 space-y-8">
@@ -66,7 +73,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-3">
-                        <User className="h-5 w-5 text-muted-foreground" />
+                        <UserIcon className="h-5 w-5 text-muted-foreground" />
                         <span>{user.displayName || 'Not set'}</span>
                     </div>
                     <div className="flex items-center gap-3">

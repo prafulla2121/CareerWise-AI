@@ -17,13 +17,22 @@ interface Message {
   message: string;
 }
 
+const generateColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = hash % 360;
+  return `hsl(${h}, 70%, 50%)`;
+};
+
+
 export default function ChatPage() {
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const avatar = placeholderData.placeholderImages.find(p => p.id === 'user-avatar');
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -70,6 +79,9 @@ export default function ChatPage() {
       setIsLoading(false);
     }
   };
+  
+  const userName = user?.displayName || 'User';
+  const avatarColor = generateColor(userName);
 
   return (
     <div className="flex h-[calc(100vh-6rem)] flex-col">
@@ -117,11 +129,10 @@ export default function ChatPage() {
                             {user?.photoURL ? (
                                 <AvatarImage src={user.photoURL} alt="User Avatar" />
                             ) : (
-                                avatar && <AvatarImage src={avatar.imageUrl} alt="User Avatar" data-ai-hint={avatar.imageHint} />
+                                <AvatarFallback style={{ backgroundColor: avatarColor, color: 'white' }}>
+                                    {userName.charAt(0)}
+                                </AvatarFallback>
                             )}
-                            <AvatarFallback>
-                                {user?.displayName?.charAt(0) || <UserIcon className="h-5 w-5" />}
-                            </AvatarFallback>
                         </Avatar>
                     )}
                     </div>
