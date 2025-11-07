@@ -134,7 +134,7 @@ export default function ResumeBuilderPage() {
   const downloadResume = () => {
     if (!generatedResume) return;
     const isHtml = generatedResume.type === 'html';
-    const blob = new Blob([generatedResume.content], { type: isHtml ? 'text/html;charset=utf-t' : 'text/markdown;charset=utf-8' });
+    const blob = new Blob([generatedResume.content], { type: isHtml ? 'text/html;charset=utf-8' : 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
