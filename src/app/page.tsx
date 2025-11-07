@@ -1,3 +1,113 @@
+import { Button } from "@/components/ui/button";
+import Logo from "@/components/logo";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bot, BarChart, FileText, Briefcase } from "lucide-react";
+import Image from 'next/image';
+import placeholderData from '@/lib/placeholder-images.json';
+
+const features = [
+  {
+    icon: <Bot className="h-8 w-8 text-primary" />,
+    title: "AI Career Chat",
+    description: "Get personalized career guidance from our Gemini-powered chatbot.",
+  },
+  {
+    icon: <FileText className="h-8 w-8 text-primary" />,
+    title: "Resume Analysis",
+    description: "Upload your resume for an instant ATS score and improvement tips.",
+  },
+  {
+    icon: <BarChart className="h-8 w-8 text-primary" />,
+    title: "Career Prediction",
+    description: "Take our assessment to discover career paths tailored to your profile.",
+  },
+  {
+    icon: <Briefcase className="h-8 w-8 text-primary" />,
+    title: "Resume Builder",
+    description: "Auto-generate a professional resume with AI-powered suggestions.",
+  },
+];
+
 export default function Home() {
-  return <></>;
+  const heroImage = placeholderData.placeholderImages.find(p => p.id === 'hero-landing');
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <Logo />
+          <nav className="flex items-center gap-4">
+            <Button variant="ghost" asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/dashboard">Get Started</Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
+      <main className="flex-1">
+        <section className="container mx-auto flex flex-col items-center px-4 py-20 text-center md:py-32">
+          <div className="mb-6 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm text-primary">
+            Powered by Firebase and Gemini AI
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight md:text-6xl bg-gradient-to-br from-foreground to-foreground/70 text-transparent bg-clip-text">
+            Navigate Your Career with AI Precision
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
+            CareerWise AI provides a full suite of tools to help you land your dream job. From resume analysis to AI-powered career chat, we've got you covered.
+          </p>
+          <div className="mt-8 flex gap-4">
+            <Button size="lg" asChild>
+              <Link href="/dashboard">Get Started for Free</Link>
+            </Button>
+          </div>
+        </section>
+
+        {heroImage && (
+            <section className="container mx-auto px-4 pb-16">
+                 <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-primary/20 shadow-2xl shadow-primary/10">
+                    <Image
+                        src={heroImage.imageUrl}
+                        alt={heroImage.description}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={heroImage.imageHint}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                 </div>
+            </section>
+        )}
+
+        <section className="container mx-auto px-4 py-16">
+          <h2 className="mb-12 text-center text-3xl font-bold">A 360° View of Your Career</h2>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature) => (
+              <Card key={feature.title} className="glass-effect text-center">
+                <CardHeader>
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                    {feature.icon}
+                  </div>
+                  <CardTitle>{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+        
+      </main>
+      <footer className="border-t border-border/50">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row">
+          <Logo className="text-base" />
+          <p className="text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} CareerWise AI. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
 }
