@@ -159,6 +159,13 @@
             "type": "string"
           }
         },
+        "recommendedCareers": {
+          "type": "array",
+          "description": "An array of career recommendations based on the resume analysis.",
+          "items": {
+            "type": "string"
+          }
+        },
         "generatedResume": {
           "type": "string",
           "description": "Reference to the generated resume file (if any) in Firebase Storage."

@@ -17,7 +17,7 @@ const ResumeBuilderInputSchema = z.object({
     phone: z.string().describe('The user\'s phone number.'),
     linkedin: z.string().optional().describe('The user\'s LinkedIn profile URL.'),
     github: z.string().optional().describe('The user\'s GitHub profile URL.'),
-    location: z.string().describe('The user\'s location.'),
+    location: z.string().describe('The user\'s location (e.g., "City, State").'),
     summary: z.string().describe('A brief professional summary of the user.'),
     experience: z
       .array(
@@ -26,8 +26,8 @@ const ResumeBuilderInputSchema = z.object({
           company: z.string().describe('The company name.'),
           location: z.string().describe('The location of the company.'),
           startDate: z.string().describe('The start date of the job (e.g., Jan 2020).'),
-          endDate: z.string().optional().describe('The end date of the job (e.g., Dec 2022), or null if current.'),
-          description: z.string().describe('A description of the job responsibilities and achievements.'),
+          endDate: z.string().optional().describe('The end date of the job (e.g., Dec 2022), or "Present".'),
+          description: z.string().describe('A description of the job responsibilities and achievements, often in bullet points.'),
         })
       )
       .describe('The user\'s work experience.'),
@@ -45,12 +45,12 @@ const ResumeBuilderInputSchema = z.object({
       .describe('The user\'s education history.'),
     skills: z.array(z.string()).describe('A list of the user\'s skills.'),
   }).describe('The user data to generate the resume from.'),
-  templateStyle: z.string().optional().describe("The styling of the template to use.")
+  templateStyle: z.enum(['modern', 'classic']).default('modern').describe("The styling of the template to use. 'classic' should be a print-friendly HTML document with a white background and Times New Roman font.")
 });
 export type ResumeBuilderInput = z.infer<typeof ResumeBuilderInputSchema>;
 
 const ResumeBuilderOutputSchema = z.object({
-  generatedResume: z.string().describe('The generated resume in a suitable format (e.g., Markdown, HTML, or PDF data URI).'),
+  generatedResume: z.string().describe('The generated resume. If the template is "classic", this should be a complete HTML document with inline CSS for a white background and Times New Roman font. Otherwise, Markdown is acceptable.'),
   suggestions: z.array(z.string()).describe('AI-powered suggestions for improving the resume.'),
 });
 export type ResumeBuilderOutput = z.infer<typeof ResumeBuilderOutputSchema>;
@@ -63,40 +63,42 @@ const prompt = ai.definePrompt({
   name: 'resumeBuilderPrompt',
   input: {schema: ResumeBuilderInputSchema},
   output: {schema: ResumeBuilderOutputSchema},
-  prompt: `You are an AI-powered resume builder. Generate a resume based on the provided user data and offer suggestions for improvement.
+  prompt: `You are an AI-powered resume builder. Your task is to generate a professional resume and provide actionable suggestions for improvement.
 
-User Data:
-{{#if userData.name}}Name: {{{userData.name}}}{{/if}}
-{{#if userData.email}}Email: {{{userData.email}}}{{/if}}
-{{#if userData.phone}}Phone: {{{userData.phone}}}{{/if}}
-{{#if userData.linkedin}}LinkedIn: {{{userData.linkedin}}}{{/if}}
-{{#if userData.github}}GitHub: {{{userData.github}}}{{/if}}
-{{#if userData.location}}Location: {{{userData.location}}}{{/if}}
-{{#if userData.summary}}Summary: {{{userData.summary}}}{{/if}}
+**Resume Generation Rules:**
+- **If templateStyle is 'classic'**: Generate a complete, single HTML file. The HTML must have a white background and use "Times New Roman" as the primary font family. Use inline CSS within a <style> tag in the <head> of the document. The output must be ONLY the HTML code, starting with <!DOCTYPE html>.
+- **If templateStyle is 'modern'**: Generate the resume in Markdown format.
 
-Experience:
+**Resume Content:**
+Use the following user data to populate the resume. Structure it logically with sections for Contact Info, Summary, Experience, Education, and Skills.
+
+- Name: {{userData.name}}
+- Contact: {{userData.email}} | {{userData.phone}} | {{userData.location}}
+- LinkedIn: {{userData.linkedin}}
+- GitHub: {{userData.github}}
+
+**Summary:**
+{{userData.summary}}
+
+**Experience:**
 {{#each userData.experience}}
-  Title: {{{this.title}}}
-  Company: {{{this.company}}}
-  Location: {{{this.location}}}
-  Dates: {{{this.startDate}}} - {{this.endDate}}
-  Description: {{{this.description}}}
+- **{{this.title}}** at {{this.company}} ({{this.location}})
+  *{{this.startDate}} - {{this.endDate}}*
+  {{{this.description}}}
 {{/each}}
 
-Education:
+**Education:**
 {{#each userData.education}}
-  Institution: {{{this.institution}}}
-  Degree: {{{this.degree}}}
-  Location: {{{this.location}}}
-  Dates: {{{this.startDate}}} - {{{this.endDate}}}
-  Description: {{{this.description}}}
+- **{{this.degree}}**, {{this.institution}} ({{this.location}})
+  *{{this.startDate}} - {{this.endDate}}*
+  {{{this.description}}}
 {{/each}}
 
-Skills: {{#each userData.skills}}{{{this}}}, {{/each}}
+**Skills:**
+{{#each userData.skills}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
 
-
-Generate the resume in Markdown format. Provide specific, actionable suggestions for improving the resume, such as adding keywords, quantifying achievements, or tailoring the resume to specific job descriptions.
-Template Style: {{{templateStyle}}}
+**AI Suggestions:**
+Provide 3-5 specific, actionable suggestions for improving the resume content. Examples: "Quantify achievements in your experience section, like 'Increased sales by 15%' instead of 'Responsible for sales'." or "Add more keywords relevant to a [Job Title] role, such as [Keyword1, Keyword2]."
 `,
 });
 

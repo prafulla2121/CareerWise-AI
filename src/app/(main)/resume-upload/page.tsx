@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeResume, AnalyzeResumeOutput } from '@/ai/flows/resume-analysis';
-import { Loader2, FileText, UploadCloud, CheckCircle, BarChart, XCircle } from 'lucide-react';
+import { Loader2, FileText, UploadCloud, CheckCircle, BarChart, XCircle, Briefcase, Lightbulb } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { AtsScoreChart } from '@/components/dashboard/ats-score-chart';
@@ -87,6 +87,7 @@ export default function ResumeUploadPage() {
           skills: result.skills,
           atsScore: result.atsScore,
           missingSkills: result.missingSkills,
+          recommendedCareers: result.recommendedCareers,
           createdAt: serverTimestamp(),
           fileName: file.name,
         };
@@ -129,7 +130,7 @@ export default function ResumeUploadPage() {
               <CardTitle className="text-2xl">Resume Analysis</CardTitle>
           </div>
           <CardDescription>
-            Upload your resume (PDF or DOCX) to get an AI-powered analysis and ATS score.
+            Upload your resume (PDF or DOCX) to get an AI-powered analysis, ATS score, and career recommendations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -167,46 +168,59 @@ export default function ResumeUploadPage() {
       )}
 
       {analysisResult && (
-        <Card className="mt-8 glass-effect">
-          <CardHeader>
-            <CardTitle>Analysis Results</CardTitle>
-            <CardDescription>Here's the breakdown of your resume analysis.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2">
+        <div className="mt-8 space-y-8">
             <Card className="glass-effect">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">ATS Score</CardTitle>
-                    <BarChart className="h-4 w-4 text-muted-foreground" />
+                <CardHeader>
+                    <CardTitle>Analysis Dashboard</CardTitle>
+                    <CardDescription>Here's the breakdown of your resume analysis.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <AtsScoreChart score={analysisResult.atsScore} />
+                <CardContent className="grid gap-6 md:grid-cols-2">
+                    <Card className="glass-effect">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">ATS Score</CardTitle>
+                            <BarChart className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <AtsScoreChart score={analysisResult.atsScore} />
+                        </CardContent>
+                    </Card>
+                     <Card className="glass-effect">
+                        <CardHeader>
+                            <CardTitle className="text-md flex items-center gap-2"><Briefcase className="text-primary"/> AI Career Recommendations</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-2">
+                        {analysisResult.recommendedCareers.length > 0 ? analysisResult.recommendedCareers.map((career, index) => (
+                            <div key={index} className="text-sm p-2 rounded-md bg-primary/10 font-medium text-primary">{career}</div>
+                        )) : <p className="text-sm text-muted-foreground">No specific careers were recommended. Try adding more detail to your resume.</p>}
+                        </CardContent>
+                    </Card>
                 </CardContent>
             </Card>
 
-            <div className="space-y-6">
-                <Card className="glass-effect">
-                    <CardHeader>
-                        <CardTitle className="text-md flex items-center gap-2"><CheckCircle className="text-green-500"/> Identified Skills</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                    {analysisResult.skills.length > 0 ? analysisResult.skills.map((skill, index) => (
-                        <Badge key={index} variant="secondary">{skill}</Badge>
-                    )) : <p className="text-sm text-muted-foreground">No specific skills were identified.</p>}
-                    </CardContent>
-                </Card>
-                <Card className="glass-effect">
-                    <CardHeader>
-                        <CardTitle className="text-md flex items-center gap-2"><XCircle className="text-destructive"/> Missing Skills</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                    {analysisResult.missingSkills.length > 0 ? analysisResult.missingSkills.map((skill, index) => (
-                        <Badge key={index} variant="outline">{skill}</Badge>
-                    )) : <p className="text-sm text-muted-foreground">Great news! No critical skills seem to be missing.</p>}
-                    </CardContent>
-                </Card>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className='glass-effect'>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-3"><Lightbulb className="text-primary"/> Skills Gap Analysis</CardTitle>
+                </CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 className="font-semibold mb-3 flex items-center gap-2"><CheckCircle className="text-green-500 h-5 w-5"/> Identified Skills</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {analysisResult.skills.length > 0 ? analysisResult.skills.map((skill, index) => (
+                                <Badge key={index} variant="secondary" className="text-base">{skill}</Badge>
+                            )) : <p className="text-sm text-muted-foreground">No specific skills were identified.</p>}
+                        </div>
+                    </div>
+                     <div>
+                        <h3 className="font-semibold mb-3 flex items-center gap-2"><XCircle className="text-destructive h-5 w-5"/> Missing Skills</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {analysisResult.missingSkills.length > 0 ? analysisResult.missingSkills.map((skill, index) => (
+                                <Badge key={index} variant="destructive" className="text-base">{skill}</Badge>
+                            )) : <p className="text-sm text-muted-foreground">Great news! No critical skills seem to be missing.</p>}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
       )}
     </div>
   );

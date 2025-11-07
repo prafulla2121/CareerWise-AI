@@ -9,27 +9,36 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, Sparkles, Download, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Sparkles, Download, PlusCircle, Trash2, CalendarIcon, FileType } from 'lucide-react';
 import { useFieldArray } from 'react-hook-form';
 import { generateResume, ResumeBuilderInput } from '@/ai/flows/resume-builder';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const experienceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   company: z.string().min(1, 'Company is required'),
   location: z.string().min(1, 'Location is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().optional(),
+  startDate: z.date({ required_error: 'A start date is required.' }),
+  endDate: z.date().optional(),
+  isCurrent: z.boolean().default(false),
   description: z.string().min(1, 'Description is required'),
+}).refine(data => data.isCurrent || !!data.endDate, {
+  message: 'End date is required unless this is your current job.',
+  path: ['endDate'],
 });
 
 const educationSchema = z.object({
   institution: z.string().min(1, 'Institution is required'),
   degree: z.string().min(1, 'Degree is required'),
   location: z.string().min(1, 'Location is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
+  startDate: z.date({ required_error: 'A start date is required.' }),
+  endDate: z.date({ required_error: 'An end date is required.' }),
   description: z.string().optional(),
 });
 
@@ -44,6 +53,7 @@ const resumeBuilderSchema = z.object({
   experience: z.array(experienceSchema).min(1, 'At least one experience is required'),
   education: z.array(educationSchema).min(1, 'At least one education entry is required'),
   skills: z.string().min(1, 'Skills are required'),
+  templateStyle: z.enum(['modern', 'classic']).default('classic'),
 });
 
 type ResumeFormData = z.infer<typeof resumeBuilderSchema>;
@@ -52,7 +62,7 @@ export default function ResumeBuilderPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedResume, setGeneratedResume] = useState<{ markdown: string; suggestions: string[] } | null>(null);
+  const [generatedResume, setGeneratedResume] = useState<{ content: string; suggestions: string[]; type: 'html' | 'markdown' } | null>(null);
 
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeBuilderSchema),
@@ -64,9 +74,10 @@ export default function ResumeBuilderPage() {
       github: '',
       location: '',
       summary: '',
-      experience: [{ title: '', company: '', location: '', startDate: '', endDate: '', description: '' }],
-      education: [{ institution: '', degree: '', location: '', startDate: '', endDate: '' }],
+      experience: [],
+      education: [],
       skills: '',
+      templateStyle: 'classic',
     },
   });
 
@@ -88,11 +99,25 @@ export default function ResumeBuilderPage() {
         userData: {
           ...data,
           skills: data.skills.split(',').map(s => s.trim()),
+          experience: data.experience.map(exp => ({
+            ...exp,
+            startDate: format(exp.startDate, 'MMM yyyy'),
+            endDate: exp.isCurrent ? 'Present' : (exp.endDate ? format(exp.endDate, 'MMM yyyy') : ''),
+          })),
+           education: data.education.map(edu => ({
+            ...edu,
+            startDate: format(edu.startDate, 'MMM yyyy'),
+            endDate: format(edu.endDate, 'MMM yyyy'),
+          })),
         },
-        templateStyle: 'modern'
+        templateStyle: data.templateStyle,
       };
       const result = await generateResume(input);
-      setGeneratedResume({ markdown: result.generatedResume, suggestions: result.suggestions });
+      setGeneratedResume({ 
+        content: result.generatedResume, 
+        suggestions: result.suggestions,
+        type: data.templateStyle === 'classic' ? 'html' : 'markdown',
+      });
       toast({ title: 'Resume Generated!', description: 'Your AI-powered resume is ready.' });
     } catch (error) {
       console.error('Resume generation failed', error);
@@ -108,11 +133,12 @@ export default function ResumeBuilderPage() {
   
   const downloadResume = () => {
     if (!generatedResume) return;
-    const blob = new Blob([generatedResume.markdown], { type: 'text/markdown;charset=utf-8' });
+    const isHtml = generatedResume.type === 'html';
+    const blob = new Blob([generatedResume.content], { type: isHtml ? 'text/html;charset=utf-8' : 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'resume.md';
+    link.download = isHtml ? 'resume.html' : 'resume.md';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -130,7 +156,7 @@ export default function ResumeBuilderPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 
                 <Card className='glass-effect'>
                     <CardHeader><CardTitle>Personal Details</CardTitle></CardHeader>
@@ -149,27 +175,30 @@ export default function ResumeBuilderPage() {
                 <Card className='glass-effect'>
                     <CardHeader><CardTitle>Professional Summary</CardTitle></CardHeader>
                     <CardContent>
-                        <FormField control={form.control} name="summary" render={({ field }) => (<FormItem><FormLabel>Summary</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="summary" render={({ field }) => (<FormItem><FormLabel>Summary</FormLabel><FormControl><Textarea rows={5} placeholder="A brief professional summary..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </CardContent>
                 </Card>
                 
                 <Card className='glass-effect'>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Work Experience</CardTitle>
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendExp({ title: '', company: '', location: '', startDate: '', endDate: '', description: '' })}><PlusCircle className="mr-2 h-4 w-4" /> Add Experience</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendExp({ title: '', company: '', location: '', startDate: new Date(), description: '', isCurrent: false })}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
                     </CardHeader>
                     <CardContent className="space-y-6">
                     {expFields.map((field, index) => (
                         <div key={field.id} className="space-y-4 rounded-md border p-4 relative">
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4 h-7 w-7" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4" /></Button>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField control={form.control} name={`experience.${index}.title`} render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name={`experience.${index}.company`} render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`experience.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`experience.${index}.startDate`} render={({ field }) => (<FormItem><FormLabel>Start Date</FormLabel><FormControl><Input placeholder="e.g., Jan 2020" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`experience.${index}.endDate`} render={({ field }) => (<FormItem><FormLabel>End Date</FormLabel><FormControl><Input placeholder="e.g., Present" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
-                            <FormField control={form.control} name={`experience.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4 h-7 w-7" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4" /></Button>
+                             <FormField control={form.control} name={`experience.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                                <FormField control={form.control} name={`experience.${index}.startDate`} render={({ field }) => (<FormItem className='flex flex-col'><FormLabel>Start Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name={`experience.${index}.endDate`} render={({ field }) => (<FormItem className='flex flex-col'><FormLabel>End Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} disabled={form.watch(`experience.${index}.isCurrent`)} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < form.watch(`experience.${index}.startDate`) || date > new Date()} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                             </div>
+                              <FormField control={form.control} name={`experience.${index}.isCurrent`} render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl><Input type='checkbox' className='h-4 w-4' checked={field.value} onChange={field.onChange} /></FormControl><FormLabel className="font-normal">I currently work here</FormLabel></FormItem>)} />
+                            <FormField control={form.control} name={`experience.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your responsibilities and achievements." {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     ))}
                     </CardContent>
@@ -178,20 +207,22 @@ export default function ResumeBuilderPage() {
                 <Card className='glass-effect'>
                      <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Education</CardTitle>
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendEdu({ institution: '', degree: '', location: '', startDate: '', endDate: '', description: ''})}><PlusCircle className="mr-2 h-4 w-4" /> Add Education</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendEdu({ institution: '', degree: '', location: '', startDate: new Date(), endDate: new Date(), description: ''})}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
                     </CardHeader>
                     <CardContent className='space-y-6'>
                     {eduFields.map((field, index) => (
                         <div key={field.id} className="space-y-4 rounded-md border p-4 relative">
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4 h-7 w-7" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4" /></Button>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField control={form.control} name={`education.${index}.institution`} render={({ field }) => (<FormItem><FormLabel>Institution</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`education.${index}.degree`} render={({ field }) => (<FormItem><FormLabel>Degree</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`education.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`education.${index}.startDate`} render={({ field }) => (<FormItem><FormLabel>Start Date</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`education.${index}.endDate`} render={({ field }) => (<FormItem><FormLabel>End Date</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name={`education.${index}.degree`} render={({ field }) => (<FormItem><FormLabel>Degree / Certificate</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            <FormField control={form.control} name={`education.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                 <FormField control={form.control} name={`education.${index}.startDate`} render={({ field }) => (<FormItem className='flex flex-col'><FormLabel>Start Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name={`education.${index}.endDate`} render={({ field }) => (<FormItem className='flex flex-col'><FormLabel>End Date</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}><>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < form.watch(`education.${index}.startDate`) || date > new Date()} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
                            </div>
-                            <FormField control={form.control} name={`education.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4 h-7 w-7" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4" /></Button>
+                            <FormField control={form.control} name={`education.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="E.g., GPA, awards, relevant coursework" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                     ))}
                     </CardContent>
@@ -200,7 +231,34 @@ export default function ResumeBuilderPage() {
                 <Card className='glass-effect'>
                     <CardHeader><CardTitle>Skills</CardTitle></CardHeader>
                     <CardContent>
-                        <FormField control={form.control} name="skills" render={({ field }) => (<FormItem><FormLabel>Skills (comma-separated)</FormLabel><FormControl><Textarea placeholder="e.g., React, Node.js, Project Management" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="skills" render={({ field }) => (<FormItem><FormLabel>Skills</FormLabel><FormControl><Textarea placeholder="Enter skills separated by commas, e.g., React, Node.js, Project Management" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </CardContent>
+                </Card>
+
+                <Card className='glass-effect'>
+                    <CardHeader><CardTitle>Template</CardTitle></CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="templateStyle"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Choose a Resume Style</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a template" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="classic">Classic (Print-Friendly)</SelectItem>
+                                    <SelectItem value="modern">Modern (Markdown)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </CardContent>
                 </Card>
 
@@ -213,7 +271,7 @@ export default function ResumeBuilderPage() {
             <div className="space-y-8">
               {isLoading && (
                 <Card className="glass-effect h-full flex flex-col items-center justify-center">
-                    <CardContent className="text-center">
+                    <CardContent className="text-center p-6">
                         <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
                         <h3 className="text-lg font-semibold">Generating your resume...</h3>
                         <p className="text-muted-foreground">Our AI is crafting your professional story.</p>
@@ -224,11 +282,21 @@ export default function ResumeBuilderPage() {
                 <>
                 <Card className="glass-effect">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Generated Resume</CardTitle>
-                        <Button variant="outline" size="sm" onClick={downloadResume}><Download className="mr-2 h-4 w-4"/>Download Markdown</Button>
+                        <CardTitle className='flex items-center gap-2'><FileType className='h-5 w-5 text-primary' /> Generated Resume</CardTitle>
+                        <Button variant="outline" size="sm" onClick={downloadResume}><Download className="mr-2 h-4 w-4"/>Download</Button>
                     </CardHeader>
-                    <CardContent className="prose prose-sm prose-invert max-w-none rounded-md border p-4 bg-background/50 h-[600px] overflow-y-auto">
-                        <pre className="whitespace-pre-wrap font-sans">{generatedResume.markdown}</pre>
+                    <CardContent>
+                      {generatedResume.type === 'html' ? (
+                        <iframe
+                          srcDoc={generatedResume.content}
+                          className="w-full h-[600px] rounded-md border bg-white"
+                          title="Generated Resume Preview"
+                        />
+                      ) : (
+                        <div className="prose prose-sm prose-invert max-w-none rounded-md border p-4 bg-background/50 h-[600px] overflow-y-auto">
+                            <pre className="whitespace-pre-wrap font-sans">{generatedResume.content}</pre>
+                        </div>
+                      )}
                     </CardContent>
                 </Card>
                 <Card className="glass-effect">
