@@ -1,38 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, orderBy, limit } from 'firebase/firestore';
+import { useState } from 'react';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { generateCareerReport, ReportGenerationOutput } from '@/ai/flows/report-generation';
-import { analyzeResume, AnalyzeResumeOutput } from '@/ai/flows/resume-analysis';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookUser, Loader2 } from 'lucide-react';
+import { BookUser, Loader2, CheckCircle, BrainCircuit, UserCheck, Award } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
+
+type ParsedReport = {
+  overview: string;
+  careerMatches: { name: string; description: string; score: number }[];
+  personality: string;
+  skills: { current: string[], missing: string[] };
+};
 
 export default function ReportPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const [report, setReport] = useState<ReportGenerationOutput | null>(null);
+  const [report, setReport] = useState<ParsedReport | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Memoize Firestore references
-  const testResultQuery = useMemoFirebase(() => 
+  const testResultQuery = useMemoFirebase(() =>
     user ? query(collection(firestore, 'users', user.uid, 'testResults'), orderBy('timestamp', 'desc'), limit(1)) : null,
     [firestore, user]
   );
   
-  const resumeAnalysisQuery = useMemoFirebase(() => 
+  const resumeAnalysisQuery = useMemoFirebase(() =>
     user ? query(collection(firestore, 'users', user.uid, 'resumeAnalysis'), orderBy('createdAt', 'desc'), limit(1)) : null,
+    [firestore, user]
+  );
+  
+  const chatHistoryQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, `users/${user.uid}/chatMessages`), orderBy('createdAt', 'asc')) : null,
     [firestore, user]
   );
 
   const { data: testResults, isLoading: isTestLoading } = useCollection(testResultQuery);
   const { data: resumeAnalyses, isLoading: isResumeLoading } = useCollection(resumeAnalysisQuery);
+  const { data: chatHistory, isLoading: isChatLoading } = useCollection(chatHistoryQuery);
 
   const latestTestResult = testResults?.[0];
   const latestResumeAnalysis = resumeAnalyses?.[0];
@@ -50,6 +61,9 @@ export default function ReportPage() {
     setReport(null);
 
     try {
+      // Simple aggregation of chat history for insights
+      const chatInsights = chatHistory?.map(c => `${c.sender}: ${c.message}`).join('\n') || 'No chat history available.';
+
       const reportInput = {
         testScores: {
           aptitude: latestTestResult.scores.aptitude,
@@ -61,15 +75,17 @@ export default function ReportPage() {
           atsScore: latestResumeAnalysis.atsScore,
           missingSkills: latestResumeAnalysis.missingSkills,
         },
-        chatInsights: 'No chat insights available yet.', // Placeholder for now
+        chatInsights: chatInsights,
       };
       
-      const generatedReport = await generateCareerReport(reportInput);
-      setReport(generatedReport);
+      const generatedReport : ReportGenerationOutput = await generateCareerReport(reportInput);
+      
+      const parsed = JSON.parse(generatedReport.report);
+      setReport(parsed);
 
     } catch (e) {
       console.error(e);
-      setError('An error occurred while generating the report. Please try again.');
+      setError('An error occurred while generating the report. The AI may have returned an unexpected format. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -109,9 +125,66 @@ export default function ReportPage() {
     
     if (report) {
         return (
-            <div className="prose prose-invert max-w-none">
-                <h2 className="text-3xl font-bold mb-4">Your Personalized Career Report</h2>
-                <p className="whitespace-pre-wrap">{report.report}</p>
+            <div className="space-y-8">
+              <Card className='glass-effect'>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3"><BookUser className="text-primary"/> Report Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{report.overview}</p>
+                </CardContent>
+              </Card>
+
+              <Card className='glass-effect'>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3"><BrainCircuit className="text-primary"/> Career Matches</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {report.careerMatches.map(career => (
+                    <Card key={career.name} className="glass-effect p-4">
+                      <h4 className="font-bold text-lg">{career.name}</h4>
+                      <p className="text-sm text-muted-foreground">{career.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-semibold">Match Score:</span>
+                        <div className="w-full bg-muted rounded-full h-2.5">
+                          <div className="bg-primary h-2.5 rounded-full" style={{width: `${career.score}%`}}></div>
+                        </div>
+                        <span className="text-xs font-bold text-primary">{career.score}%</span>
+                      </div>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                <Card className='glass-effect'>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3"><UserCheck className="text-primary"/> Personality Insights</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{report.personality}</p>
+                  </CardContent>
+                </Card>
+                <Card className='glass-effect'>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3"><Award className="text-primary"/> Skills Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Your Current Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {report.skills.current.map(skill => <div key={skill} className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full">{skill}</div>)}
+                      </div>
+                    </div>
+                     <div>
+                      <h4 className="font-semibold mb-2">Recommended Skills to Develop</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {report.skills.missing.map(skill => <div key={skill} className="bg-secondary/10 text-secondary text-xs font-medium px-2.5 py-1 rounded-full">{skill}</div>)}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
         );
     }
@@ -129,12 +202,12 @@ export default function ReportPage() {
                 <div className="mt-4 flex flex-col gap-2 text-left">
                     <div className="flex items-center gap-2">
                         {latestTestResult ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Loader2 className="h-5 w-5 animate-spin" />}
-                        <span className={latestTestResult ? "text-green-500" : ""}>Complete the Career Assessment Test</span>
+                        <span className={latestTestResult ? "text-green-500 line-through" : ""}>Complete the Career Assessment Test</span>
                         {!latestTestResult && <Button variant="link" asChild><Link href="/test">Start Test</Link></Button>}
                     </div>
                     <div className="flex items-center gap-2">
                         {latestResumeAnalysis ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Loader2 className="h-5 w-5 animate-spin" />}
-                        <span className={latestResumeAnalysis ? "text-green-500" : ""}>Upload and Analyze Your Resume</span>
+                        <span className={latestResumeAnalysis ? "text-green-500 line-through" : ""}>Upload and Analyze Your Resume</span>
                         {!latestResumeAnalysis && <Button variant="link" asChild><Link href="/resume-upload">Upload Resume</Link></Button>}
                     </div>
                 </div>
@@ -168,27 +241,8 @@ export default function ReportPage() {
             </CardDescription>
         </CardHeader>
         <CardContent className="min-h-[400px] flex items-center justify-center p-6">
-            {(isUserLoading || isTestLoading || isResumeLoading) ? renderLoadingState() : renderReportContent()}
+            {(isUserLoading || isTestLoading || isResumeLoading || isChatLoading) ? renderLoadingState() : renderReportContent()}
         </CardContent>
     </Card>
   );
 }
-function CheckCircle(props:any) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-        <polyline points="22 4 12 14.01 9 11.01" />
-      </svg>
-    )
-  }
