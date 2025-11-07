@@ -42,7 +42,7 @@ export default function Home() {
               <Link href="/login">Login</Link>
             </Button>
             <Button asChild>
-              <Link href="/dashboard">Get Started</Link>
+              <Link href="/signup">Get Started</Link>
             </Button>
           </nav>
         </div>
@@ -60,7 +60,7 @@ export default function Home() {
           </p>
           <div className="mt-8 flex gap-4">
             <Button size="lg" asChild>
-              <Link href="/dashboard">Get Started for Free</Link>
+              <Link href="/signup">Get Started for Free</Link>
             </Button>
           </div>
         </section>

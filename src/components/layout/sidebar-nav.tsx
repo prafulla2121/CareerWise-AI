@@ -18,6 +18,9 @@ import {
   Briefcase,
   BookUser,
 } from "lucide-react";
+import { useUser } from "@/firebase";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const navItems = [
   { href: "/dashboard", icon: <LayoutDashboard />, label: "Dashboard" },
@@ -30,6 +33,31 @@ const navItems = [
 
 export default function SidebarNav() {
   const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  if(isUserLoading) {
+    return (
+        <>
+            <SidebarHeader>
+                <Logo />
+            </SidebarHeader>
+            <SidebarContent className="p-2">
+                {/* You can add a skeleton loader here */}
+            </SidebarContent>
+        </>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <>
