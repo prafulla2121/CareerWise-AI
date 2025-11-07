@@ -1,0 +1,334 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the Career360 platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role (e.g., 'user', 'admin')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "testsCompleted": {
+          "type": "number",
+          "description": "The number of tests completed by the user."
+        },
+        "profileStrength": {
+          "type": "number",
+          "description": "A numerical representation of the user's profile completeness or strength."
+        },
+        "resumeFile": {
+          "type": "string",
+          "description": "Reference to the resume file stored in Firebase Storage. (Relationship: User 1:1 Resume)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "role",
+        "createdAt"
+      ]
+    },
+    "TestResult": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TestResult",
+      "type": "object",
+      "description": "Stores the results of a career assessment test taken by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test result entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who took the test. (Relationship: User 1:N TestResult)"
+        },
+        "scores": {
+          "type": "array",
+          "description": "Scores on the aptitude, personality and interest factors.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "recommendedCareers": {
+          "type": "array",
+          "description": "An array of career recommendations based on the test results.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when the test was completed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "scores",
+        "recommendedCareers",
+        "timestamp"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single message within a chat session between a user and the AI assistant.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message entity."
+        },
+        "chatSessionId": {
+          "type": "string",
+          "description": "The chat session this message belongs to."
+        },
+        "sender": {
+          "type": "string",
+          "description": "Indicates who sent the message ('user' or 'assistant')."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the chat message."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "chatSessionId",
+        "sender",
+        "message",
+        "createdAt"
+      ]
+    },
+    "ResumeAnalysis": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ResumeAnalysis",
+      "type": "object",
+      "description": "Stores the analysis results of a user's resume.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the resume analysis entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User whose resume was analyzed. (Relationship: User 1:1 ResumeAnalysis)"
+        },
+        "skills": {
+          "type": "array",
+          "description": "An array of skills identified in the resume.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "atsScore": {
+          "type": "number",
+          "description": "The ATS (Applicant Tracking System) score of the resume."
+        },
+        "missingSkills": {
+          "type": "array",
+          "description": "An array of skills missing from the resume.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generatedResume": {
+          "type": "string",
+          "description": "Reference to the generated resume file (if any) in Firebase Storage."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the resume analysis was performed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "skills",
+        "atsScore",
+        "missingSkills",
+        "createdAt"
+      ]
+    },
+    "AdminSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminSettings",
+      "type": "object",
+      "description": "Stores system-wide settings managed by the administrator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the settings entity.  Should always be 'system'."
+        },
+        "bannedWords": {
+          "type": "array",
+          "description": "An array of words that are banned from being used in the chat or resume.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aiLimits": {
+          "type": "array",
+          "description": "Limits for AI usage, such as maximum chats per day.",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Uses path-based ownership for private user data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/testResults/{testResultId}",
+        "definition": {
+          "entityName": "TestResult",
+          "schema": {
+            "$ref": "#/backend/entities/TestResult"
+          },
+          "description": "Stores test results for each user. Uses hierarchical paths to secure access to test results based on user ID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "testResultId",
+              "description": "The unique identifier of the test result."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chatMessages/{chatSessionId}/messages/{chatMessageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores chat messages for each user within a chat session. Uses hierarchical paths to ensure only the user can access their chat history.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "chatSessionId",
+              "description": "The unique identifier for the chat session."
+            },
+            {
+              "name": "chatMessageId",
+              "description": "The unique identifier for the chat message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumeAnalysis/{resumeAnalysisId}",
+        "definition": {
+          "entityName": "ResumeAnalysis",
+          "schema": {
+            "$ref": "#/backend/entities/ResumeAnalysis"
+          },
+          "description": "Stores resume analysis results for each user.  Uses hierarchical paths to secure access to resume analysis data based on user ID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "resumeAnalysisId",
+              "description": "The unique identifier for the resume analysis."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/adminSettings/{settingsId}",
+        "definition": {
+          "entityName": "AdminSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AdminSettings"
+          },
+          "description": "Stores admin settings.  The document ID should always be 'system'.",
+          "params": [
+            {
+              "name": "settingsId",
+              "description": "The unique identifier for the settings (should be 'system')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store admin roles.  Presence of a document indicates admin access. Uses existence over content for security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to provide a secure and scalable backend for the Career360 platform, focusing on authorization independence, clarity, and predictable data access patterns.  Path-based ownership secures user-specific data, while membership maps are used for collaborative content.  Denormalization of authorization data is employed to eliminate the need for `get()` calls in security rules, crucial for atomic operations and debuggability.\n\nThe structure ensures QAPs by:\n\n*   Segregating data based on access requirements (e.g., user-owned data under `/users/{userId}`).\n*   Using dedicated collections for global roles (`/roles_admin/{uid}`) for secure `list` operations.  The design avoids custom claims, relying solely on `request.auth.uid` and data stored in the database.\n\nTo support invariants, the structure enforces strict naming conventions, explicit state modeling with a `status` field, and predictable schema to ensure data integrity and consistency."
+  }
+}
