@@ -23,7 +23,7 @@ interface PersonalityChartProps {
 const chartConfig = {
     score: {
         label: "Score",
-        color: "hsl(var(--primary))",
+        color: "hsl(var(--chart-2))",
     }
 } satisfies ChartConfig
 
@@ -48,9 +48,9 @@ export function PersonalityChart({ scores }: PersonalityChartProps) {
   return (
     <ChartContainer config={chartConfig} className="h-[250px] w-full">
         <ResponsiveContainer>
-            <RadarChart data={chartData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+            <RadarChart data={chartData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
                  <ChartTooltip
-                    cursor={{fill: "hsla(var(--primary), 0.1)"}}
+                    cursor={{fill: "hsla(var(--chart-2), 0.1)"}}
                     content={<ChartTooltipContent hideIndicator />}
                 />
                 <PolarGrid />
@@ -58,8 +58,8 @@ export function PersonalityChart({ scores }: PersonalityChartProps) {
                 <Radar
                     name="Personality"
                     dataKey="score"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary))"
+                    stroke="hsl(var(--chart-2))"
+                    fill="hsl(var(--chart-2))"
                     fillOpacity={0.6}
                 />
             </RadarChart>
@@ -67,3 +67,5 @@ export function PersonalityChart({ scores }: PersonalityChartProps) {
     </ChartContainer>
   )
 }
+
+    

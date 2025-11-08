@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpRight, Activity, FileText, BarChart, Bot, UserCheck } from "lucide-react";
 import Link from "next/link";
-import { Overview } from "@/components/dashboard/overview";
 import { AtsScoreChart } from "@/components/dashboard/ats-score-chart";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
@@ -12,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PersonalityChart } from "@/components/dashboard/personality-chart";
 import { SkillsChart } from "@/components/dashboard/skills-chart";
 import { ProfileCompleteness } from "@/components/dashboard/profile-completeness";
+import { ScoreRadialChart } from "@/components/dashboard/score-radial-chart";
 
 export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
@@ -58,6 +58,8 @@ export default function DashboardPage() {
         hasCompletedProfile: !!user?.displayName
     };
     const profileStrength = (completeness.hasAnalyzedResume ? 40 : 0) + (completeness.hasTakenTest ? 40 : 0) + (completeness.hasCompletedProfile ? 20 : 0);
+
+    const hasTakenTest = testsCompletedCount > 0;
 
     return (
         <div className="flex-1 space-y-6">
@@ -118,7 +120,11 @@ export default function DashboardPage() {
                             <CardDescription>Your assessment scores and personality traits.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-6 md:grid-cols-2">
-                            <Overview scores={testScores} />
+                             <div className="grid grid-cols-3 gap-4">
+                                <ScoreRadialChart score={testScores.aptitude} label="Aptitude" color="hsl(var(--chart-1))" />
+                                <ScoreRadialChart score={testScores.personality} label="Personality" color="hsl(var(--chart-2))" />
+                                <ScoreRadialChart score={testScores.interests} label="Interests" color="hsl(var(--chart-3))" />
+                            </div>
                             <PersonalityChart scores={personalityScores} />
                         </CardContent>
                     </Card>
@@ -267,3 +273,5 @@ function DashboardSkeleton() {
         </div>
     );
 }
+
+    

@@ -1,3 +1,4 @@
+// This file is no longer used and can be removed.
 'use client';
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
@@ -67,3 +68,5 @@ export function Overview({ scores }: OverviewProps) {
     </ChartContainer>
   );
 }
+
+    
