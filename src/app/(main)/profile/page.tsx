@@ -9,6 +9,7 @@ import { collection } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
 
 const generateColor = (name: string) => {
+  if (!name) return 'hsl(222, 47%, 11%)';
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -49,7 +50,7 @@ export default function ProfilePage() {
   const userName = user.displayName || 'Anonymous User';
   const avatarColor = generateColor(userName);
 
-  const profileStrength = (!!resumeAnalyses?.length ? 50 : 0) + (!!testResults?.length ? 25 : 0);
+  const profileStrength = (!!resumeAnalyses?.length ? 40 : 0) + (!!testResults?.length ? 40 : 0) + (user.displayName ? 20 : 0);
   const creationDate = user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'N/A';
 
   return (
@@ -66,7 +67,7 @@ export default function ProfilePage() {
           <CardTitle className="mt-4 text-3xl">{userName}</CardTitle>
           <CardDescription>{user.email}</CardDescription>
         </CardHeader>
-        <CardContent className="mt-6 space-y-8">
+        <CardContent className="mt-6 space-y-8 p-6">
             <Card className="glass-effect">
                 <CardHeader>
                     <CardTitle>Profile Details</CardTitle>
@@ -129,15 +130,15 @@ export default function ProfilePage() {
 function ProfileSkeleton() {
     return (
       <div className="container mx-auto max-w-4xl py-8">
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden glass-effect">
           <Skeleton className="h-32 w-full" />
           <div className="flex flex-col items-center -mt-16">
             <Skeleton className="h-24 w-24 rounded-full border-4 border-background" />
             <Skeleton className="h-8 w-48 mt-4" />
             <Skeleton className="h-4 w-64 mt-2" />
           </div>
-          <CardContent className="mt-12 space-y-8">
-            <Card>
+          <CardContent className="mt-12 space-y-8 p-6">
+            <Card className="glass-effect">
                 <CardHeader>
                     <Skeleton className="h-6 w-32" />
                 </CardHeader>
@@ -146,7 +147,7 @@ function ProfileSkeleton() {
                     <Skeleton className="h-6 w-full" />
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="glass-effect">
                 <CardHeader>
                     <Skeleton className="h-6 w-40" />
                 </CardHeader>
@@ -155,7 +156,7 @@ function ProfileSkeleton() {
                     <Skeleton className="h-6 w-full" />
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="glass-effect">
                 <CardHeader>
                     <Skeleton className="h-6 w-36" />
                 </CardHeader>

@@ -1,7 +1,7 @@
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 
 interface OverviewProps {
   scores: {
@@ -12,9 +12,6 @@ interface OverviewProps {
 }
 
 const chartConfig = {
-  score: {
-    label: "Score",
-  },
   aptitude: {
     label: "Aptitude",
     color: "hsl(var(--chart-1))",
@@ -31,44 +28,40 @@ const chartConfig = {
 
 export function Overview({ scores }: OverviewProps) {
     const chartData = [
-        { category: "Aptitude", score: scores.aptitude, fill: "var(--color-aptitude)" },
-        { category: "Personality", score: scores.personality, fill: "var(--color-personality)" },
-        { category: "Interests", score: scores.interests, fill: "var(--color-interests)" },
+        { category: "Scores", aptitude: scores.aptitude, personality: scores.personality, interests: scores.interests },
     ];
 
     if (scores.aptitude === 0 && scores.personality === 0 && scores.interests === 0) {
         return (
-            <div className="flex h-[350px] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-center">
+            <div className="flex h-[250px] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-center">
                 <p className="text-muted-foreground">No test data available.</p>
-                <p className="text-sm text-muted-foreground">Complete the career assessment to see your analytics.</p>
+                <p className="text-sm text-muted-foreground">Complete the career assessment.</p>
             </div>
         )
     }
 
   return (
-    <ChartContainer config={chartConfig} className="h-[350px] w-full">
+    <ChartContainer config={chartConfig} className="h-[250px] w-full">
       <ResponsiveContainer>
-        <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
-          <XAxis
-            dataKey="category"
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-          />
+        <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10 }}>
           <YAxis
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
+            dataKey="category"
+            type="category"
             tickLine={false}
+            tickMargin={10}
             axisLine={false}
-            tickFormatter={(value) => `${value}`}
-            domain={[0, 100]}
+            tickFormatter={(value) => value.slice(0, 3)}
+            hide
           />
+          <XAxis dataKey="interests" type="number" domain={[0, 100]} hide />
           <Tooltip
             cursor={{ fill: "hsl(var(--accent))", radius: "4px" }}
             content={<ChartTooltipContent indicator="dot" />}
           />
-          <Bar dataKey="score" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" />
+          <Legend content={<ChartLegendContent />} />
+          <Bar dataKey="aptitude" stackId="a" fill="var(--color-aptitude)" radius={[4, 0, 0, 4]} />
+          <Bar dataKey="personality" stackId="a" fill="var(--color-personality)" />
+          <Bar dataKey="interests" stackId="a" fill="var(--color-interests)" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>
