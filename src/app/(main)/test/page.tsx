@@ -10,10 +10,10 @@ import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { generateCareerReport, ReportGenerationInput } from '@/ai/flows/report-generation';
+import { generateCareerReport } from '@/ai/flows/report-generation';
 import { BarChart, CheckCircle } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -235,10 +235,12 @@ export default function TestPage() {
 
     setIsSubmitting(true);
     const scores = calculateScores();
+    
+    // Initial data, recommendations will be added later
     const testResultData = {
         userId: user.uid,
         scores,
-        recommendedCareers: [], // Will be filled by AI
+        recommendedCareers: [], // To be updated by AI
         timestamp: serverTimestamp(),
         answers,
     };
@@ -248,11 +250,37 @@ export default function TestPage() {
         const docRef = await addDoc(testResultsCollection, testResultData);
 
         const userDocRef = doc(firestore, 'users', user.uid);
+        // This is a non-blocking update
         setDocumentNonBlocking(userDocRef, { testsCompleted: 1 }, { merge: true });
+
+        // Now, call the AI to get recommendations
+        try {
+            const reportInput = {
+                testScores: scores,
+                // Provide empty/dummy data for resume and chat as they are not required for this step
+                resumeAnalysis: { skills: [], atsScore: 0, missingSkills: [] },
+                chatInsights: 'N/A',
+            };
+            const aiResult = await generateCareerReport(reportInput);
+            const parsedReport = JSON.parse(aiResult.report);
+            const recommendedCareers = parsedReport.careerMatches.map((match: any) => match.name);
+            
+            // Update the document with the AI recommendations
+            await updateDoc(docRef, { recommendedCareers });
+
+        } catch (aiError) {
+            console.error("AI recommendation generation failed:", aiError);
+            // The test is saved, but recommendations failed. We can inform the user.
+             toast({
+                variant: "destructive",
+                title: "AI Analysis Failed",
+                description: "Your test was saved, but we couldn't generate AI recommendations right now.",
+            });
+        }
 
         toast({
             title: "Test Submitted!",
-            description: "Your results have been saved. You will be redirected to your dashboard.",
+            description: "Your results and AI recommendations have been saved.",
         });
         setIsCompleted(true);
         setTimeout(() => router.push('/dashboard'), 2000);
