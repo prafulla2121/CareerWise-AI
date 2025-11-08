@@ -115,13 +115,13 @@ export default function ResumeBuilderPage() {
             endDate: format(edu.endDate, 'MMM yyyy'),
           })),
         },
-        templateStyle: data.templateStyle,
+        templateStyle: 'classic', // Always use classic for HTML output
       };
       const result = await generateResume(input);
       setGeneratedResume({
         content: result.generatedResume,
         suggestions: result.suggestions,
-        type: data.templateStyle === 'classic' ? 'html' : 'markdown',
+        type: 'html', // Always HTML now
       });
       toast({ title: 'Resume Generated!', description: 'Your AI-powered resume is ready.' });
     } catch (error) {
@@ -138,12 +138,11 @@ export default function ResumeBuilderPage() {
 
   const downloadResume = () => {
     if (!generatedResume) return;
-    const isHtml = generatedResume.type === 'html';
-    const blob = new Blob([generatedResume.content], { type: isHtml ? 'text/html;charset=utf-8' : 'text/markdown;charset=utf-8' });
+    const blob = new Blob([generatedResume.content], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = isHtml ? 'resume.html' : 'resume.md';
+    link.download = 'resume.html';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -403,28 +402,23 @@ export default function ResumeBuilderPage() {
                 </Card>
 
                 {/* ---------------------- Template ---------------------- */}
-                <Card className="glass-effect">
-                  <CardHeader><CardTitle>Template</CardTitle></CardHeader>
-                  <CardContent>
-                    <FormField control={form.control} name="templateStyle" render={({ field }) => (
-                      <FormItem>
+                <FormField control={form.control} name="templateStyle" render={({ field }) => (
+                    <FormItem className='hidden'>
                         <FormLabel>Choose a Resume Style</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
+                        <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a template" />
+                            <SelectValue placeholder="Select a template" />
                             </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
+                        </FormControl>
+                        <SelectContent>
                             <SelectItem value="classic">Classic (Print-Friendly)</SelectItem>
                             <SelectItem value="modern">Modern (Markdown)</SelectItem>
-                          </SelectContent>
+                        </SelectContent>
                         </Select>
                         <FormMessage />
-                      </FormItem>
-                    )} />
-                  </CardContent>
-                </Card>
+                    </FormItem>
+                )} />
 
                 {/* ---------------------- Submit Button ---------------------- */}
                 <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
@@ -465,17 +459,11 @@ export default function ResumeBuilderPage() {
                       </Button>
                     </CardHeader>
                     <CardContent>
-                      {generatedResume.type === 'html' ? (
-                        <iframe
+                      <iframe
                           srcDoc={generatedResume.content}
                           className="w-full h-[600px] rounded-md border bg-white"
                           title="Generated Resume Preview"
                         />
-                      ) : (
-                        <div className="prose prose-sm prose-invert max-w-none rounded-md border p-4 bg-background/50 h-[600px] overflow-y-auto">
-                          <pre className="whitespace-pre-wrap font-sans">{generatedResume.content}</pre>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
 
