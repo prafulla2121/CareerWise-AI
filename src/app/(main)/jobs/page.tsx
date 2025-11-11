@@ -6,8 +6,9 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { searchForJobs, JobSearchInput, JobSearchOutput } from '@/ai/flows/job-search';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Loader2, Briefcase, Building, MapPin, ExternalLink } from 'lucide-react';
+import { Loader2, Briefcase, Building, MapPin, ExternalLink, CalendarDays } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function JobsPage() {
   const { user, isUserLoading } = useUser();
@@ -125,10 +126,15 @@ export default function JobsPage() {
                                     <Building className="h-4 w-4" /> {job.company}
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="flex-grow space-y-2">
-                                <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <MapPin className="h-4 w-4" /> {job.location}
-                                </p>
+                            <CardContent className="flex-grow space-y-4">
+                                <div className="space-y-2 text-sm text-muted-foreground">
+                                    <p className="flex items-center gap-2">
+                                        <MapPin className="h-4 w-4" /> {job.location}
+                                    </p>
+                                    <p className="flex items-center gap-2">
+                                        <CalendarDays className="h-4 w-4" /> {formatDistanceToNow(new Date(job.postedOn), { addSuffix: true })}
+                                    </p>
+                                </div>
                                 <p className="text-sm pt-2">{job.description}</p>
                             </CardContent>
                             <CardFooter>
