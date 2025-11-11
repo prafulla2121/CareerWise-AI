@@ -95,7 +95,6 @@ const jobSearchFlow = ai.defineFlow(
       prompt: `Find jobs for the title: ${input.jobTitle}`,
       tools: [findJobListingsTool],
       model: 'googleai/gemini-pro',
-      toolChoice: 'required',
     });
 
     if (!output) {
