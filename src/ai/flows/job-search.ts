@@ -94,7 +94,7 @@ const jobSearchFlow = ai.defineFlow(
     const { output } = await ai.generate({
         prompt: `Find jobs for the title: ${input.jobTitle}`,
         tools: [findJobListingsTool],
-        model: 'googleai/gemini-2.5-flash',
+        model: 'googleai/gemini-pro',
     });
 
     if (!output) {
