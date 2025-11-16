@@ -49,14 +49,11 @@ export default function Home() {
       </header>
       <main className="flex-1">
         <section className="container mx-auto flex flex-col items-center px-4 py-20 text-center md:py-32">
-          <div className="mb-6 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm text-primary">
-            Powered by Firebase and Gemini AI
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl bg-gradient-to-br from-foreground to-foreground/70 text-transparent bg-clip-text">
-            Get a 360° View of Your Career
+           <h1 className="text-4xl font-bold tracking-tight md:text-6xl bg-gradient-to-br from-foreground to-foreground/70 text-transparent bg-clip-text">
+            Unlock Your Career Potential with AI-Powered Guidance
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            Our AI-powered suite analyzes your skills, personality, and experience to deliver a personalized roadmap, from resume optimization to finding the perfect job.
+            Career 360 provides a holistic view of your professional journey by analyzing your skills, personality, and experience to chart a clear path to success.
           </p>
           <div className="mt-8 flex gap-4">
             <Button size="lg" asChild>

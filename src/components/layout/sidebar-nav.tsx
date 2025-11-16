@@ -17,7 +17,6 @@ import {
   BarChart,
   Briefcase,
   BookUser,
-  Search,
 } from "lucide-react";
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -29,7 +28,6 @@ const navItems = [
   { href: "/test", icon: <BarChart />, label: "Career Test" },
   { href: "/resume-upload", icon: <FileText />, label: "Resume Analysis" },
   { href: "/resume-builder", icon: <Briefcase />, label: "Resume Builder" },
-  { href: "/jobs", icon: <Search />, label: "Find Jobs" },
   { href: "/report", icon: <BookUser />, label: "Career Report" },
 ];
 
