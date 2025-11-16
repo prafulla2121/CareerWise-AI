@@ -53,10 +53,10 @@ export default function Home() {
             Powered by Firebase and Gemini AI
           </div>
           <h1 className="text-4xl font-bold tracking-tight md:text-6xl bg-gradient-to-br from-foreground to-foreground/70 text-transparent bg-clip-text">
-            Navigate Your Career with AI Precision
+            Get a 360° View of Your Career
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            CareerWise AI provides a full suite of tools to help you land your dream job. From resume analysis to AI-powered career chat, we've got you covered.
+            Our AI-powered suite analyzes your skills, personality, and experience to deliver a personalized roadmap, from resume optimization to finding the perfect job.
           </p>
           <div className="mt-8 flex gap-4">
             <Button size="lg" asChild>
@@ -104,7 +104,7 @@ export default function Home() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row">
           <Logo className="text-base" />
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} CareerWise AI. All rights reserved.
+            &copy; {new Date().getFullYear()} Career 360. All rights reserved.
           </p>
         </div>
       </footer>
