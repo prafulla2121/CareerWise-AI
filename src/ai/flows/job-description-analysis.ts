@@ -32,7 +32,7 @@ const jobAnalysisPrompt = ai.definePrompt({
   name: 'jobAnalysisPrompt',
   input: {schema: JobAnalysisInputSchema},
   output: {schema: JobAnalysisOutputSchema},
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an expert NLP analyst specializing in parsing job descriptions for career coaching. Analyze the following job description and extract the key information.
 
 Job Description:
