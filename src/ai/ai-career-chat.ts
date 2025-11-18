@@ -33,7 +33,6 @@ const prompt = ai.definePrompt({
   name: 'careerChatPrompt',
   input: {schema: CareerChatInputSchema},
   output: {schema: CareerChatOutputSchema},
-  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are a career guidance chatbot designed to provide personalized advice to users.
       Take into account the previous chat history to provide more relevant and helpful responses.
 

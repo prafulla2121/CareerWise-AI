@@ -40,7 +40,6 @@ const prompt = ai.definePrompt({
   name: 'reportGenerationPrompt',
   input: {schema: ReportGenerationInputSchema},
   output: {schema: ReportGenerationOutputSchema},
-  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an expert AI career counselor. Your task is to generate a comprehensive, personalized career report. The output MUST be a single JSON string that can be parsed into an object.
 
 The JSON object should have the following structure:

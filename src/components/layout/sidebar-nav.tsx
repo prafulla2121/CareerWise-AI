@@ -17,6 +17,7 @@ import {
   BarChart,
   Briefcase,
   BookUser,
+  ClipboardCheck,
 } from "lucide-react";
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/chat", icon: <Bot />, label: "AI Chat" },
   { href: "/test", icon: <BarChart />, label: "Career Test" },
   { href: "/resume-upload", icon: <FileText />, label: "Resume Analysis" },
+  { href: "/job-analyzer", icon: <ClipboardCheck />, label: "Job Analyzer" },
   { href: "/resume-builder", icon: <Briefcase />, label: "Resume Builder" },
   { href: "/report", icon: <BookUser />, label: "Career Report" },
 ];
@@ -70,7 +72,7 @@ export default function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={pathname.startsWith(item.href)}
                 tooltip={{ children: item.label }}
               >
                 <Link href={item.href}>

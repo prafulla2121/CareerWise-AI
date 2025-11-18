@@ -35,7 +35,6 @@ const analyzeResumePrompt = ai.definePrompt({
   name: 'analyzeResumePrompt',
   input: {schema: AnalyzeResumeInputSchema},
   output: {schema: AnalyzeResumeOutputSchema},
-  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an expert AI resume analyst and career counselor. Analyze the provided resume and perform the following tasks:
 1.  Extract a list of the most important technical and soft skills.
 2.  Provide an Applicant Tracking System (ATS) score out of 100.
