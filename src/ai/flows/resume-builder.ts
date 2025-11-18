@@ -65,7 +65,7 @@ const prompt = ai.definePrompt({
   name: 'resumeBuilderPrompt',
   input: {schema: ResumeBuilderInputSchema},
   output: {schema: ResumeBuilderOutputSchema},
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-pro',
   prompt: `You are an AI-powered resume builder. Your task is to generate a professional resume and provide actionable suggestions for improvement.
 
 **Resume Generation Rules:**
