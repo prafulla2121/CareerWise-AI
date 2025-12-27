@@ -56,12 +56,13 @@ const resumeBuilderSchema = z.object({
   linkedin: z.string().url('Invalid URL').optional().or(z.literal('')),
   github: z.string().url('Invalid URL').optional().or(z.literal('')),
   location: z.string().min(1, 'Location is required'),
+  jobTitle: z.string().min(1, 'Job Title is required'),
   summary: z.string().min(10, 'Summary should be at least 10 characters'),
   experience: z.array(experienceSchema).min(1, 'At least one experience is required'),
   education: z.array(educationSchema).min(1, 'At least one education entry is required'),
   projects: z.array(projectSchema).optional(),
   skills: z.string().min(1, 'Skills are required'),
-  templateStyle: z.enum(['modern', 'classic']).default('classic'),
+  templateStyle: z.enum(['modern-2col']).default('modern-2col'),
 });
 
 type ResumeFormData = z.infer<typeof resumeBuilderSchema>;
@@ -83,12 +84,13 @@ export default function ResumeBuilderPage() {
       linkedin: '',
       github: '',
       location: '',
+      jobTitle: '',
       summary: '',
       experience: [],
       education: [],
       projects: [],
       skills: '',
-      templateStyle: 'classic',
+      templateStyle: 'modern-2col',
     },
   });
 
@@ -128,13 +130,14 @@ export default function ResumeBuilderPage() {
           })),
           projects: data.projects,
         },
-        templateStyle: 'classic', // Always use classic for HTML output
+        jobTitle: data.jobTitle,
+        templateStyle: 'modern-2col', 
       };
       const result = await generateResume(input);
       setGeneratedResume({
         content: result.generatedResume,
         suggestions: result.suggestions,
-        type: 'html', // Always HTML now
+        type: 'html', 
       });
       toast({ title: 'Resume Generated!', description: 'Your AI-powered resume is ready.' });
     } catch (error) {
@@ -180,11 +183,12 @@ export default function ResumeBuilderPage() {
                 
                 {/* ---------------------- Personal Details ---------------------- */}
                 <Card className="glass-effect">
-                  <CardHeader><CardTitle>Personal Details</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>Personal & Professional Details</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {[
                         { name: 'name', label: 'Full Name' },
+                        { name: 'jobTitle', label: 'Job Title', placeholder: 'e.g. Marketing Manager'},
                         { name: 'email', label: 'Email' },
                         { name: 'phone', label: 'Phone' },
                         { name: 'location', label: 'Location', placeholder: 'City, Country' },
@@ -192,7 +196,7 @@ export default function ResumeBuilderPage() {
                         { name: 'github', label: 'GitHub URL' },
                       ].map((f) => (
                         <FormField key={f.name} control={form.control} name={f.name as any} render={({ field }) => (
-                          <FormItem>
+                          <FormItem className={f.name === 'jobTitle' ? 'sm:col-span-2' : ''}>
                             <FormLabel>{f.label}</FormLabel>
                             <FormControl><Input placeholder={f.placeholder || ''} {...field} /></FormControl>
                             <FormMessage />
@@ -308,7 +312,7 @@ export default function ResumeBuilderPage() {
                         </div>
 
                         <FormField control={form.control} name={`experience.${index}.description`} render={({ field }) => (
-                          <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                          <FormItem><FormLabel>Description (use bullet points)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                       </div>
                     ))}
@@ -464,8 +468,7 @@ export default function ResumeBuilderPage() {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="classic">Classic (Print-Friendly)</SelectItem>
-                            <SelectItem value="modern">Modern (Markdown)</SelectItem>
+                            <SelectItem value="modern-2col">Modern Two-Column</SelectItem>
                         </SelectContent>
                         </Select>
                         <FormMessage />
