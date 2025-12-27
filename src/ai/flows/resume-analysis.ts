@@ -32,7 +32,7 @@ const extractTextPrompt = ai.definePrompt({
   name: 'extractTextPrompt',
   input: {schema: ExtractTextFromResumeInputSchema},
   output: {schema: ExtractTextFromResumeOutputSchema},
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-2.5-flash',
   prompt: `You are a document parsing expert. Your only task is to extract all the text content from the following document. Do not summarize, analyze, or alter the text in any way. Output the raw text.
 
 Resume: {{media url=resumeDataUri}}`,
@@ -75,7 +75,7 @@ const scoreResumeTextPrompt = ai.definePrompt({
     name: 'scoreResumeTextPrompt',
     input: { schema: ScoreResumeTextInputSchema },
     output: { schema: ScoreResumeTextOutputSchema },
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-2.5-flash',
     prompt: `You are an AI resume grader. Your task is to analyze the provided resume text and score it based on a strict set of rules.
 
 **Analysis Steps:**
