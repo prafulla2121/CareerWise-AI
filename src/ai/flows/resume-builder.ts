@@ -44,6 +44,12 @@ const ResumeBuilderInputSchema = z.object({
       )
       .describe('The user\'s education history.'),
     skills: z.array(z.string()).describe('A list of the user\'s skills.'),
+    projects: z.array(
+        z.object({
+            name: z.string().describe('The name of the project.'),
+            description: z.string().describe('A description of the project.'),
+        })
+    ).optional().describe('The user\'s projects.'),
   }).describe('The user data to generate the resume from.'),
   templateStyle: z.enum(['modern', 'classic']).default('classic').describe("The styling of the template to use. 'classic' should be a print-friendly HTML document with a white background and Times New Roman font.")
 });
@@ -65,15 +71,15 @@ const prompt = ai.definePrompt({
   name: 'resumeBuilderPrompt',
   input: {schema: ResumeBuilderInputSchema},
   output: {schema: ResumeBuilderOutputSchema},
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an AI-powered resume builder. Your task is to generate a professional resume and provide actionable suggestions for improvement.
 
 **Resume Generation Rules:**
 - Generate a complete, single HTML file. The HTML must have a professional and clean layout suitable for printing. Use a classic and readable font like "Times New Roman" as the primary font family.
 - Use inline CSS within a <style> tag in the <head> of the document for all styling.
 - The output must be ONLY the HTML code, starting with <!DOCTYPE html>.
-- Structure the resume with clear sections: Header (Name, Contact Info), Summary, Experience, Education, and Skills.
-- For the Experience and Education sections, use bullet points for descriptions.
+- Structure the resume with clear sections: Header (Name, Contact Info), Summary, Experience, Education, Projects, and Skills.
+- For the Experience, Education, and Projects sections, use bullet points for descriptions.
 
 **Resume Content:**
 Use the following user data to populate the resume.
@@ -99,6 +105,14 @@ Use the following user data to populate the resume.
   *{{this.startDate}} - {{this.endDate}}*
   {{{this.description}}}
 {{/each}}
+
+{{#if userData.projects}}
+**Projects:**
+{{#each userData.projects}}
+- **{{this.name}}**
+  {{{this.description}}}
+{{/each}}
+{{/if}}
 
 **Skills:**
 {{#each userData.skills}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}

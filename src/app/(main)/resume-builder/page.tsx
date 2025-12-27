@@ -44,6 +44,11 @@ const educationSchema = z.object({
   description: z.string().optional(),
 });
 
+const projectSchema = z.object({
+  name: z.string().min(1, 'Project name is required'),
+  description: z.string().min(1, 'Description is required'),
+});
+
 const resumeBuilderSchema = z.object({
   name: z.string().min(1, 'Full name is required'),
   email: z.string().email('Invalid email address'),
@@ -54,6 +59,7 @@ const resumeBuilderSchema = z.object({
   summary: z.string().min(10, 'Summary should be at least 10 characters'),
   experience: z.array(experienceSchema).min(1, 'At least one experience is required'),
   education: z.array(educationSchema).min(1, 'At least one education entry is required'),
+  projects: z.array(projectSchema).optional(),
   skills: z.string().min(1, 'Skills are required'),
   templateStyle: z.enum(['modern', 'classic']).default('classic'),
 });
@@ -80,6 +86,7 @@ export default function ResumeBuilderPage() {
       summary: '',
       experience: [],
       education: [],
+      projects: [],
       skills: '',
       templateStyle: 'classic',
     },
@@ -93,6 +100,11 @@ export default function ResumeBuilderPage() {
   const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({
     control: form.control,
     name: 'education',
+  });
+
+  const { fields: projectFields, append: appendProject, remove: removeProject } = useFieldArray({
+    control: form.control,
+    name: 'projects',
   });
 
   // ---------------------- SUBMIT ----------------------
@@ -114,6 +126,7 @@ export default function ResumeBuilderPage() {
             startDate: format(edu.startDate, 'MMM yyyy'),
             endDate: format(edu.endDate, 'MMM yyyy'),
           })),
+          projects: data.projects,
         },
         templateStyle: 'classic', // Always use classic for HTML output
       };
@@ -380,6 +393,45 @@ export default function ResumeBuilderPage() {
                                 </FormItem>
                             )} />
                         </div>
+                         <FormField control={form.control} name={`education.${index}.description`} render={({ field }) => (
+                            <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* ---------------------- Projects ---------------------- */}
+                <Card className="glass-effect">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Projects</CardTitle>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendProject({ name: '', description: '' })}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {projectFields.map((field, index) => (
+                      <div key={field.id} className="space-y-4 rounded-md border p-4 relative">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-4 right-4 h-7 w-7"
+                          onClick={() => removeProject(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <FormField control={form.control} name={`projects.${index}.name`} render={({ field }) => (
+                          <FormItem><FormLabel>Project Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name={`projects.${index}.description`} render={({ field }) => (
+                          <FormItem><FormLabel>Project Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                       </div>
                     ))}
                   </CardContent>
