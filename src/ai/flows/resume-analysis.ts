@@ -86,7 +86,7 @@ const scoreResumeTextPrompt = ai.definePrompt({
     - If 'Hobbies' or 'Interests' is missing: "Please add Hobbies. It will show your personality to the Recruiters and give the assurance that you are fit for this role or not."
     - If 'Achievements' is missing: "Please add Achievements. It will show that you are capable for the required position."
     - If 'Projects' is missing: "Please add Projects. It will show that you have done work related the required position or not."
-    If a section is present, do not provide feedback for it. The feedback array should only contain advice for missing sections.
+If a section is present, do not provide feedback for it. The feedback array should only contain advice for missing sections.
 3.  **Extract Skills:** Identify and list the key skills from the resume text.
 4.  **Recommend Careers:** Based on the overall content, recommend 3-5 suitable career titles.
 
