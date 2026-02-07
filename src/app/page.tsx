@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/logo";
 import Link from "next/link";
@@ -5,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, BarChart, FileText, Briefcase } from "lucide-react";
 import Image from 'next/image';
 import placeholderData from '@/lib/placeholder-images.json';
+import { useAuth, useUser, FirebaseClientProvider } from "@/firebase";
+import { useRouter } from "next/navigation";
+import { initiateAnonymousSignIn } from "@/firebase/auth/email-password";
+import { useEffect } from "react";
 
 const features = [
   {
@@ -29,8 +35,21 @@ const features = [
   },
 ];
 
-export default function Home() {
+function HomeComponent() {
   const heroImage = placeholderData.placeholderImages.find(p => p.id === 'hero-landing');
+  const auth = useAuth();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+
+  const handleGuestLogin = () => {
+    initiateAnonymousSignIn(auth);
+  };
+  
+  useEffect(() => {
+    if (!isUserLoading && user) {
+        router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -49,18 +68,18 @@ export default function Home() {
       </header>
       <main className="flex-1">
         <section className="container mx-auto flex flex-col items-center px-4 py-20 text-center md:py-32">
-          <div className="mb-6 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm text-primary">
-            Powered by Firebase and Gemini AI
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl bg-gradient-to-br from-foreground to-foreground/70 text-transparent bg-clip-text">
-            Navigate Your Career with AI Precision
+           <h1 className="text-4xl font-bold tracking-tight md:text-6xl bg-gradient-to-br from-foreground to-foreground/70 text-transparent bg-clip-text">
+            Unlock Your Career Potential with AI-Powered Guidance
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            CareerWise AI provides a full suite of tools to help you land your dream job. From resume analysis to AI-powered career chat, we've got you covered.
+            Career 360 provides a holistic view of your professional journey by analyzing your skills, personality, and experience to chart a clear path to success.
           </p>
-          <div className="mt-8 flex gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row gap-4">
             <Button size="lg" asChild>
               <Link href="/signup">Get Started for Free</Link>
+            </Button>
+             <Button size="lg" variant="secondary" onClick={handleGuestLogin}>
+              Continue as Guest
             </Button>
           </div>
         </section>
@@ -104,10 +123,19 @@ export default function Home() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row">
           <Logo className="text-base" />
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} CareerWise AI. All rights reserved.
+            &copy; {new Date().getFullYear()} Career 360. All rights reserved.
           </p>
         </div>
       </footer>
     </div>
   );
+}
+
+
+export default function Home() {
+    return (
+        <FirebaseClientProvider>
+            <HomeComponent />
+        </FirebaseClientProvider>
+    )
 }

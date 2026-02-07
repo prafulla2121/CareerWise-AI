@@ -4,9 +4,11 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User as UserIcon, Mail, Calendar, BarChart, FileText } from 'lucide-react';
+import { User as UserIcon, Mail, Calendar, BarChart, FileText, Globe } from 'lucide-react';
 import { collection } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const generateColor = (name: string) => {
   if (!name) return 'hsl(222, 47%, 11%)';
@@ -72,7 +74,7 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle>Profile Details</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                     <div className="flex items-center gap-3">
                         <UserIcon className="h-5 w-5 text-muted-foreground" />
                         <span>{user.displayName || 'Not set'}</span>
@@ -84,6 +86,24 @@ export default function ProfilePage() {
                      <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-muted-foreground" />
                         <span>Member since {creationDate}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Globe className="h-5 w-5 text-muted-foreground" />
+                        <div className='w-full'>
+                            <Label htmlFor="language-select" className="sr-only">Language</Label>
+                            <Select defaultValue="en">
+                                <SelectTrigger id="language-select" className="w-full">
+                                    <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="en">English</SelectItem>
+                                    <SelectItem value="hi">Hindi</SelectItem>
+                                    <SelectItem value="mr">Marathi</SelectItem>
+                                    <SelectItem value="gu">Gujarati</SelectItem>
+                                    <SelectItem value="ta">Tamil</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -145,6 +165,8 @@ function ProfileSkeleton() {
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Skeleton className="h-6 w-full" />
                     <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-10 w-full" />
                 </CardContent>
             </Card>
              <Card className="glass-effect">

@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'CareerWise AI',
+  title: 'Career 360',
   description: 'AI-powered career guidance platform',
 };
 

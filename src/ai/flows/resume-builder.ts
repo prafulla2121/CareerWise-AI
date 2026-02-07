@@ -44,45 +44,63 @@ const ResumeBuilderInputSchema = z.object({
       )
       .describe('The user\'s education history.'),
     skills: z.array(z.string()).describe('A list of the user\'s skills.'),
+    projects: z.array(
+        z.object({
+            name: z.string().describe('The name of the project.'),
+            description: z.string().describe('A description of the project.'),
+        })
+    ).optional().describe('The user\'s projects.'),
   }).describe('The user data to generate the resume from.'),
-  templateStyle: z.enum(['modern', 'classic']).default('classic').describe("The styling of the template to use. 'classic' should be a print-friendly HTML document with a white background and Times New Roman font.")
+  jobTitle: z.string().optional().describe('The job title the user is applying for, e.g., "Marketing Manager"'),
+  templateStyle: z.enum(['modern-2col']).default('modern-2col').describe("The styling of the template to use. 'modern-2col' should be a two-column layout inspired by the provided example.")
 });
 export type ResumeBuilderInput = z.infer<typeof ResumeBuilderInputSchema>;
 
 const ResumeBuilderOutputSchema = z.object({
-  generatedResume: z.string().describe('The generated resume. This should be a complete HTML document with inline CSS for a white background and a professional, classic font like Times New Roman.'),
+  generatedResume: z.string().describe('The generated resume as a complete HTML document with inline CSS.'),
   suggestions: z.array(z.string()).describe('AI-powered suggestions for improving the resume.'),
 });
 export type ResumeBuilderOutput = z.infer<typeof ResumeBuilderOutputSchema>;
 
 export async function generateResume(input: ResumeBuilderInput): Promise<ResumeBuilderOutput> {
-  // Force classic template style for HTML output
-  const classicInput = { ...input, templateStyle: 'classic' as const };
-  return resumeBuilderFlow(classicInput);
+  const styledInput = { ...input, templateStyle: 'modern-2col' as const };
+  return resumeBuilderFlow(styledInput);
 }
 
 const prompt = ai.definePrompt({
   name: 'resumeBuilderPrompt',
   input: {schema: ResumeBuilderInputSchema},
   output: {schema: ResumeBuilderOutputSchema},
-  prompt: `You are an AI-powered resume builder. Your task is to generate a professional resume and provide actionable suggestions for improvement.
+  model: 'googleai/gemini-2.5-flash',
+  prompt: `You are an expert resume designer. Your task is to generate a professional, single-page, two-column resume and provide actionable improvement suggestions.
 
 **Resume Generation Rules:**
-- Generate a complete, single HTML file. The HTML must have a professional and clean layout suitable for printing. Use a classic and readable font like "Times New Roman" as the primary font family.
-- Use inline CSS within a <style> tag in the <head> of the document for all styling.
-- The output must be ONLY the HTML code, starting with <!DOCTYPE html>.
-- Structure the resume with clear sections: Header (Name, Contact Info), Summary, Experience, Education, and Skills.
-- For the Experience and Education sections, use bullet points for descriptions.
+1.  Generate a **compact, single-page, complete HTML file**. The entire resume MUST fit onto a standard A4 page. Use inline CSS within a \`<style>\` tag in the \`<head>\`. The output must be ONLY the HTML code, starting with \`<!DOCTYPE html>\`. Avoid any large margins or excessive padding to ensure a dense, professional layout.
+2.  **Typography:** Use the 'Inter', sans-serif font family. The base font size for the body text MUST be 10pt. Line height should be approximately 1.2. Use slightly larger fonts for titles and headers, but do not exceed 24pt for the name. All text in the summary and descriptions must be justified.
+3.  **Layout:**
+    *   The page should be split into two columns.
+    *   **Left Column (30% width):** This column should contain the Contact, Skills, and Projects sections. Use a very light gray background for this column.
+    *   **Right Column (70% width):** This column should contain the Name, Job Title, Profile, Work Experience, and Education sections. This should have a white background.
+    *   A vertical line should separate the sections in the right column, creating a timeline effect.
+4.  **Styling:**
+    *   **Name:** Display the user's name in a large (22-24pt), bold, uppercase font at the top of the right column.
+    *   **Job Title:** Display the job title below the name in a smaller (11pt), uppercase font with letter-spacing.
+    *   **Section Headers:** All section headers (PROFILE, WORK EXPERIENCE, CONTACT, SKILLS, etc.) should be bold, uppercase (11pt), with a solid line/border underneath.
+    *   **Timeline Icons:** Use simple, inline SVG icons for the timeline in the right column (a person icon for Profile, a briefcase for Work Experience, a graduation cap for Education).
+5.  **Structure:**
+    *   Organize the resume with clear sections as described in the layout.
+    *   Use bullet points (\`<ul>\`, \`<li>\`) for descriptions in the Experience and Projects sections.
 
 **Resume Content:**
 Use the following user data to populate the resume.
 
 - Name: {{userData.name}}
+- Job Title: {{jobTitle}}
 - Contact: {{userData.email}} | {{userData.phone}} | {{userData.location}}
 {{#if userData.linkedin}} | LinkedIn: {{userData.linkedin}}{{/if}}
 {{#if userData.github}} | GitHub: {{userData.github}}{{/if}}
 
-**Summary:**
+**Profile Summary:**
 {{userData.summary}}
 
 **Experience:**
@@ -98,6 +116,14 @@ Use the following user data to populate the resume.
   *{{this.startDate}} - {{this.endDate}}*
   {{{this.description}}}
 {{/each}}
+
+{{#if userData.projects}}
+**Projects:**
+{{#each userData.projects}}
+- **{{this.name}}**
+  {{{this.description}}}
+{{/each}}
+{{/if}}
 
 **Skills:**
 {{#each userData.skills}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}

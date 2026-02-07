@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,8 @@ import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // ---------------------- SCHEMAS ----------------------
 
@@ -44,6 +46,11 @@ const educationSchema = z.object({
   description: z.string().optional(),
 });
 
+const projectSchema = z.object({
+  name: z.string().min(1, 'Project name is required'),
+  description: z.string().min(1, 'Description is required'),
+});
+
 const resumeBuilderSchema = z.object({
   name: z.string().min(1, 'Full name is required'),
   email: z.string().email('Invalid email address'),
@@ -51,11 +58,13 @@ const resumeBuilderSchema = z.object({
   linkedin: z.string().url('Invalid URL').optional().or(z.literal('')),
   github: z.string().url('Invalid URL').optional().or(z.literal('')),
   location: z.string().min(1, 'Location is required'),
+  jobTitle: z.string().min(1, 'Job Title is required'),
   summary: z.string().min(10, 'Summary should be at least 10 characters'),
   experience: z.array(experienceSchema).min(1, 'At least one experience is required'),
   education: z.array(educationSchema).min(1, 'At least one education entry is required'),
+  projects: z.array(projectSchema).optional(),
   skills: z.string().min(1, 'Skills are required'),
-  templateStyle: z.enum(['modern', 'classic']).default('classic'),
+  templateStyle: z.enum(['modern-2col']).default('modern-2col'),
 });
 
 type ResumeFormData = z.infer<typeof resumeBuilderSchema>;
@@ -67,6 +76,7 @@ export default function ResumeBuilderPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [generatedResume, setGeneratedResume] = useState<{content: string, suggestions: string[], type: string} | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeBuilderSchema),
@@ -77,11 +87,13 @@ export default function ResumeBuilderPage() {
       linkedin: '',
       github: '',
       location: '',
+      jobTitle: '',
       summary: '',
       experience: [],
       education: [],
+      projects: [],
       skills: '',
-      templateStyle: 'classic',
+      templateStyle: 'modern-2col',
     },
   });
 
@@ -93,6 +105,11 @@ export default function ResumeBuilderPage() {
   const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({
     control: form.control,
     name: 'education',
+  });
+
+  const { fields: projectFields, append: appendProject, remove: removeProject } = useFieldArray({
+    control: form.control,
+    name: 'projects',
   });
 
   // ---------------------- SUBMIT ----------------------
@@ -114,14 +131,16 @@ export default function ResumeBuilderPage() {
             startDate: format(edu.startDate, 'MMM yyyy'),
             endDate: format(edu.endDate, 'MMM yyyy'),
           })),
+          projects: data.projects,
         },
-        templateStyle: 'classic', // Always use classic for HTML output
+        jobTitle: data.jobTitle,
+        templateStyle: 'modern-2col', 
       };
       const result = await generateResume(input);
       setGeneratedResume({
         content: result.generatedResume,
         suggestions: result.suggestions,
-        type: 'html', // Always HTML now
+        type: 'html', 
       });
       toast({ title: 'Resume Generated!', description: 'Your AI-powered resume is ready.' });
     } catch (error) {
@@ -137,16 +156,60 @@ export default function ResumeBuilderPage() {
   };
 
   const downloadResume = () => {
-    if (!generatedResume) return;
-    const blob = new Blob([generatedResume.content], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'resume.html';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (!generatedResume || !iframeRef.current?.contentWindow?.document.body) {
+      toast({
+        variant: 'destructive',
+        title: 'Resume Not Ready',
+        description: 'The resume preview has not been generated yet.',
+      });
+      return;
+    }
+
+    const resumeContent = iframeRef.current.contentWindow.document.body;
+
+    html2canvas(resumeContent, {
+      scale: 2, 
+      useCORS: true,
+      logging: false,
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / canvasHeight;
+      
+      let imgWidth = pdfWidth;
+      let imgHeight = imgWidth / ratio;
+      
+      if (imgHeight > pdfHeight) {
+        imgHeight = pdfHeight;
+        imgWidth = imgHeight * ratio;
+      }
+
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = 0;
+
+      pdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+      pdf.save('resume.pdf');
+      toast({
+        title: 'Download Started',
+        description: 'Your resume is being downloaded as a PDF.',
+      });
+    }).catch(err => {
+      console.error("PDF generation failed", err);
+      toast({
+        variant: 'destructive',
+        title: 'Download Failed',
+        description: 'Could not generate PDF. Please try again.',
+      });
+    });
   };
 
   // ---------------------- RENDER ----------------------
@@ -167,11 +230,12 @@ export default function ResumeBuilderPage() {
                 
                 {/* ---------------------- Personal Details ---------------------- */}
                 <Card className="glass-effect">
-                  <CardHeader><CardTitle>Personal Details</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>Personal & Professional Details</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {[
                         { name: 'name', label: 'Full Name' },
+                        { name: 'jobTitle', label: 'Job Title', placeholder: 'e.g. Marketing Manager'},
                         { name: 'email', label: 'Email' },
                         { name: 'phone', label: 'Phone' },
                         { name: 'location', label: 'Location', placeholder: 'City, Country' },
@@ -179,7 +243,7 @@ export default function ResumeBuilderPage() {
                         { name: 'github', label: 'GitHub URL' },
                       ].map((f) => (
                         <FormField key={f.name} control={form.control} name={f.name as any} render={({ field }) => (
-                          <FormItem>
+                          <FormItem className={f.name === 'jobTitle' ? 'sm:col-span-2' : ''}>
                             <FormLabel>{f.label}</FormLabel>
                             <FormControl><Input placeholder={f.placeholder || ''} {...field} /></FormControl>
                             <FormMessage />
@@ -295,7 +359,7 @@ export default function ResumeBuilderPage() {
                         </div>
 
                         <FormField control={form.control} name={`experience.${index}.description`} render={({ field }) => (
-                          <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                          <FormItem><FormLabel>Description (use bullet points)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                       </div>
                     ))}
@@ -380,6 +444,45 @@ export default function ResumeBuilderPage() {
                                 </FormItem>
                             )} />
                         </div>
+                         <FormField control={form.control} name={`education.${index}.description`} render={({ field }) => (
+                            <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* ---------------------- Projects ---------------------- */}
+                <Card className="glass-effect">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Projects</CardTitle>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendProject({ name: '', description: '' })}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {projectFields.map((field, index) => (
+                      <div key={field.id} className="space-y-4 rounded-md border p-4 relative">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-4 right-4 h-7 w-7"
+                          onClick={() => removeProject(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <FormField control={form.control} name={`projects.${index}.name`} render={({ field }) => (
+                          <FormItem><FormLabel>Project Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name={`projects.${index}.description`} render={({ field }) => (
+                          <FormItem><FormLabel>Project Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                       </div>
                     ))}
                   </CardContent>
@@ -412,8 +515,7 @@ export default function ResumeBuilderPage() {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="classic">Classic (Print-Friendly)</SelectItem>
-                            <SelectItem value="modern">Modern (Markdown)</SelectItem>
+                            <SelectItem value="modern-2col">Modern Two-Column</SelectItem>
                         </SelectContent>
                         </Select>
                         <FormMessage />
@@ -455,11 +557,12 @@ export default function ResumeBuilderPage() {
                         <FileType className="h-5 w-5 text-primary" /> Generated Resume
                       </CardTitle>
                       <Button variant="outline" size="sm" onClick={downloadResume}>
-                        <Download className="mr-2 h-4 w-4" /> Download
+                        <Download className="mr-2 h-4 w-4" /> Download PDF
                       </Button>
                     </CardHeader>
                     <CardContent>
                       <iframe
+                          ref={iframeRef}
                           srcDoc={generatedResume.content}
                           className="w-full h-[600px] rounded-md border bg-white"
                           title="Generated Resume Preview"

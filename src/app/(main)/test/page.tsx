@@ -69,6 +69,31 @@ const questions = [
     text: 'When faced with a tight deadline, you:',
     options: ['Become more focused and efficient.', 'Feel stressed and overwhelmed.', 'Prioritize the most important tasks.', 'Communicate with stakeholders to manage expectations.'],
   },
+  {
+    category: 'aptitude',
+    text: 'When presented with data, what is your first instinct?',
+    options: ['Look for the summary and key findings.', 'Question the source and validity of the data.', 'Visualize it to better understand the relationships.', 'Dig into the raw numbers to find your own insights.'],
+  },
+  {
+    category: 'aptitude',
+    text: 'You are planning a trip. What is your approach?',
+    options: ['Create a detailed itinerary with a schedule.', 'Have a general destination in mind and be spontaneous.', 'Research the history and culture of the place extensively.', 'Find the most efficient and cost-effective travel routes.'],
+  },
+  {
+    category: 'aptitude',
+    text: 'Which work environment do you think you would thrive in?',
+    options: ['A structured corporate environment with clear hierarchies.', 'A fast-paced startup with changing priorities.', 'A research lab focused on innovation.', 'A collaborative, team-based setting.'],
+  },
+  {
+    category: 'aptitude',
+    text: 'You\'ve made a mistake at work. How do you handle it?',
+    options: ['Take ownership immediately and inform your manager.', 'Try to fix it quietly before anyone notices.', 'Analyze what went wrong to prevent it from happening again.', 'Discuss it with a colleague to get their perspective.'],
+  },
+  {
+    category: 'aptitude',
+    text: 'When assembling furniture, you are most likely to:',
+    options: ['Follow the instructions diagram step-by-step.', 'Look at the picture and figure it out yourself.', 'Organize all the pieces and screws before starting.', 'Build the main structure first and then add the details.'],
+  },
   // Personality
   {
     category: 'personality',
@@ -208,17 +233,23 @@ export default function TestPage() {
       personality: 0,
       interests: 0,
     };
+    const categoryTotals = {
+        aptitude: 15,
+        personality: 10,
+        interests: 10,
+    };
+
     answers.forEach((answer, index) => {
       if (answer !== null) {
         const question = questions[index];
-        // simple scoring: add 1 for any answer
         scores[question.category as keyof typeof scores] += 1;
       }
     });
+    
     // Normalize to a scale of 100
-    scores.aptitude = scores.aptitude * 10;
-    scores.personality = scores.personality * 10;
-    scores.interests = scores.interests * 10;
+    scores.aptitude = Math.round((scores.aptitude / categoryTotals.aptitude) * 100);
+    scores.personality = Math.round((scores.personality / categoryTotals.personality) * 100);
+    scores.interests = Math.round((scores.interests / categoryTotals.interests) * 100);
 
     return scores;
   };

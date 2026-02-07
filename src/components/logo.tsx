@@ -13,7 +13,7 @@ const Logo: FC<LogoProps> = ({ className }) => {
       <div className="rounded-lg bg-primary/10 p-2 text-primary">
         <Briefcase className="h-6 w-6" />
       </div>
-      <span className="hidden sm:inline-block">CareerWise AI</span>
+      <span className="hidden sm:inline-block">Career 360</span>
     </Link>
   );
 };

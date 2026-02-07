@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeResume, AnalyzeResumeOutput } from '@/ai/flows/resume-analysis';
+import { extractTextFromResume, scoreResumeText, ScoreResumeTextOutput } from '@/ai/flows/resume-analysis';
 import { Loader2, FileText, UploadCloud, CheckCircle, BarChart, XCircle, Briefcase, Lightbulb } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -16,10 +16,18 @@ import { doc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
+// The final analysis result now includes feedback
+type AnalysisResult = {
+    skills: string[];
+    atsScore: number;
+    feedback: string[];
+    recommendedCareers: string[];
+};
+
 export default function ResumeUploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeResumeOutput | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
@@ -75,19 +83,33 @@ export default function ResumeUploadPage() {
       reader.readAsDataURL(file);
       reader.onload = async () => {
         const resumeDataUri = reader.result as string;
-        const result = await analyzeResume({ resumeDataUri });
-        setAnalysisResult(result);
+        
+        // Step 1: Extract text from the resume
+        const { resumeText } = await extractTextFromResume({ resumeDataUri });
+        
+        // Step 2: Score the extracted text
+        const result = await scoreResumeText({ resumeText });
+
+        const finalResult: AnalysisResult = {
+            skills: result.skills,
+            atsScore: result.atsScore,
+            feedback: result.feedback,
+            recommendedCareers: result.recommendedCareers,
+        };
+
+        setAnalysisResult(finalResult);
         toast({
           title: 'Analysis Complete',
           description: 'Your resume has been successfully analyzed.',
         });
 
+        // Save to Firestore
         const analysisData = {
           userId: user.uid,
-          skills: result.skills,
-          atsScore: result.atsScore,
-          missingSkills: result.missingSkills,
-          recommendedCareers: result.recommendedCareers,
+          skills: finalResult.skills,
+          atsScore: finalResult.atsScore,
+          missingSkills: [], // This could be derived from feedback if needed
+          recommendedCareers: finalResult.recommendedCareers,
           createdAt: serverTimestamp(),
           fileName: file.name,
         };
@@ -97,7 +119,6 @@ export default function ResumeUploadPage() {
 
         const userDocRef = doc(firestore, 'users', user.uid);
         setDocumentNonBlocking(userDocRef, { profileStrength: 50 }, { merge: true });
-
       };
     } catch (e: any) {
         console.error('Analysis failed:', e);
@@ -177,7 +198,7 @@ export default function ResumeUploadPage() {
                 <CardContent className="grid gap-6 md:grid-cols-2">
                     <Card className="glass-effect">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">ATS Score</CardTitle>
+                            <CardTitle className="text-sm font-medium">Resume Score</CardTitle>
                             <BarChart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
@@ -199,7 +220,7 @@ export default function ResumeUploadPage() {
 
             <Card className='glass-effect'>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-3"><Lightbulb className="text-primary"/> Skills Gap Analysis</CardTitle>
+                    <CardTitle className="flex items-center gap-3"><Lightbulb className="text-primary"/> Skills & Feedback</CardTitle>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6">
                     <div>
@@ -211,11 +232,11 @@ export default function ResumeUploadPage() {
                         </div>
                     </div>
                      <div>
-                        <h3 className="font-semibold mb-3 flex items-center gap-2"><XCircle className="text-destructive h-5 w-5"/> Missing Skills</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {analysisResult.missingSkills.length > 0 ? analysisResult.missingSkills.map((skill, index) => (
-                                <Badge key={index} variant="destructive" className="text-base">{skill}</Badge>
-                            )) : <p className="text-sm text-muted-foreground">Great news! No critical skills seem to be missing.</p>}
+                        <h3 className="font-semibold mb-3 flex items-center gap-2"><XCircle className="text-destructive h-5 w-5"/> Improvement Tips</h3>
+                        <div className="space-y-2">
+                            {analysisResult.feedback.length > 0 ? analysisResult.feedback.map((tip, index) => (
+                                <p key={index} className="text-sm text-muted-foreground">{tip}</p>
+                            )) : <p className="text-sm text-muted-foreground">Great news! Your resume includes all key sections.</p>}
                         </div>
                     </div>
                 </CardContent>

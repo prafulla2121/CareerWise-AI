@@ -59,7 +59,7 @@ export default function LoginPage() {
         <Card className="glass-effect">
             <CardHeader className="text-center">
                 <CardTitle>Welcome Back</CardTitle>
-                <CardDescription>Log in to continue to CareerWise AI</CardDescription>
+                <CardDescription>Log in to continue to Career 360</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
