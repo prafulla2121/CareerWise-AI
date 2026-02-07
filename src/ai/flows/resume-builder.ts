@@ -72,21 +72,20 @@ const prompt = ai.definePrompt({
   input: {schema: ResumeBuilderInputSchema},
   output: {schema: ResumeBuilderOutputSchema},
   model: 'googleai/gemini-2.5-flash',
-  prompt: `You are an expert resume designer. Your task is to generate a professional, two-column resume and provide actionable improvement suggestions.
+  prompt: `You are an expert resume designer. Your task is to generate a professional, single-page, two-column resume and provide actionable improvement suggestions.
 
 **Resume Generation Rules:**
-1.  Generate a **complete, single HTML file** with a two-column layout. The output must be ONLY the HTML code, starting with \`<!DOCTYPE html>\`.
-2.  Use inline CSS within a \`<style>\` tag in the \`<head>\`. The design should be clean, modern, and professional, inspired by the example provided.
+1.  Generate a **compact, single-page, complete HTML file**. The entire resume MUST fit onto a standard A4 page. Use inline CSS within a \`<style>\` tag in the \`<head>\`. The output must be ONLY the HTML code, starting with \`<!DOCTYPE html>\`. Avoid any large margins or excessive padding to ensure a dense, professional layout.
+2.  **Typography:** Use the 'Inter', sans-serif font family. The base font size for the body text MUST be 10pt. Line height should be approximately 1.2. Use slightly larger fonts for titles and headers, but do not exceed 24pt for the name. All text in the summary and descriptions must be justified.
 3.  **Layout:**
     *   The page should be split into two columns.
-    *   **Left Column (approx. 30% width):** This column should contain the Contact, Skills, and Projects sections. Use a slightly off-white or very light gray background for this column.
-    *   **Right Column (approx. 70% width):** This column should contain the Name, Job Title, Profile, Work Experience, and Education sections. This should have a white background.
+    *   **Left Column (30% width):** This column should contain the Contact, Skills, and Projects sections. Use a very light gray background for this column.
+    *   **Right Column (70% width):** This column should contain the Name, Job Title, Profile, Work Experience, and Education sections. This should have a white background.
     *   A vertical line should separate the sections in the right column, creating a timeline effect.
 4.  **Styling:**
-    *   **Fonts:** Use a clean, sans-serif font family like 'Inter' or 'Helvetica'.
-    *   **Name:** Display the user's name in large, bold, uppercase letters at the top of the right column.
-    *   **Job Title:** Display the job title below the name in smaller, uppercase letters with spacing.
-    *   **Section Headers:** All section headers (PROFILE, WORK EXPERIENCE, CONTACT, SKILLS, etc.) should be bold, uppercase, with a solid line/border underneath.
+    *   **Name:** Display the user's name in a large (22-24pt), bold, uppercase font at the top of the right column.
+    *   **Job Title:** Display the job title below the name in a smaller (11pt), uppercase font with letter-spacing.
+    *   **Section Headers:** All section headers (PROFILE, WORK EXPERIENCE, CONTACT, SKILLS, etc.) should be bold, uppercase (11pt), with a solid line/border underneath.
     *   **Timeline Icons:** Use simple, inline SVG icons for the timeline in the right column (a person icon for Profile, a briefcase for Work Experience, a graduation cap for Education).
 5.  **Structure:**
     *   Organize the resume with clear sections as described in the layout.

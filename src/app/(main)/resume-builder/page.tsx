@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,8 @@ import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // ---------------------- SCHEMAS ----------------------
 
@@ -74,6 +76,7 @@ export default function ResumeBuilderPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [generatedResume, setGeneratedResume] = useState<{content: string, suggestions: string[], type: string} | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeBuilderSchema),
@@ -153,16 +156,60 @@ export default function ResumeBuilderPage() {
   };
 
   const downloadResume = () => {
-    if (!generatedResume) return;
-    const blob = new Blob([generatedResume.content], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'resume.html';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (!generatedResume || !iframeRef.current?.contentWindow?.document.body) {
+      toast({
+        variant: 'destructive',
+        title: 'Resume Not Ready',
+        description: 'The resume preview has not been generated yet.',
+      });
+      return;
+    }
+
+    const resumeContent = iframeRef.current.contentWindow.document.body;
+
+    html2canvas(resumeContent, {
+      scale: 2, 
+      useCORS: true,
+      logging: false,
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / canvasHeight;
+      
+      let imgWidth = pdfWidth;
+      let imgHeight = imgWidth / ratio;
+      
+      if (imgHeight > pdfHeight) {
+        imgHeight = pdfHeight;
+        imgWidth = imgHeight * ratio;
+      }
+
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = 0;
+
+      pdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+      pdf.save('resume.pdf');
+      toast({
+        title: 'Download Started',
+        description: 'Your resume is being downloaded as a PDF.',
+      });
+    }).catch(err => {
+      console.error("PDF generation failed", err);
+      toast({
+        variant: 'destructive',
+        title: 'Download Failed',
+        description: 'Could not generate PDF. Please try again.',
+      });
+    });
   };
 
   // ---------------------- RENDER ----------------------
@@ -510,11 +557,12 @@ export default function ResumeBuilderPage() {
                         <FileType className="h-5 w-5 text-primary" /> Generated Resume
                       </CardTitle>
                       <Button variant="outline" size="sm" onClick={downloadResume}>
-                        <Download className="mr-2 h-4 w-4" /> Download
+                        <Download className="mr-2 h-4 w-4" /> Download PDF
                       </Button>
                     </CardHeader>
                     <CardContent>
                       <iframe
+                          ref={iframeRef}
                           srcDoc={generatedResume.content}
                           className="w-full h-[600px] rounded-md border bg-white"
                           title="Generated Resume Preview"
